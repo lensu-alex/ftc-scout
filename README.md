@@ -48,7 +48,8 @@ https://ftc-events.firstinspires.org/services/API, then create `~/.ftc-scout/con
 | "Which one is your team?" (only when unsure) | ✅ tap a picture once, every match is re-identified |
 | Team stats from video (distance, speed, time moving, heatmap, flags) | ✅ (helper mode) |
 | Pollen scored per alliance + hive tips (read inside the hive, found automatically per camera view) | ✅ helper; ±1 ball per volley |
-| Pollen scored per robot (team vs partner) | ✅ helper pass 2: 1080p bursts before each volley, launch evidence above each robot; ~85% of volleys get a clear shooter on 4 Oregon matches; shown as sure–possible range |
+| Pollen scored per robot (team vs partner) | ✅ helper pass 2: 1080p bursts before each volley (720p when the stream has no 1080p), launch evidence above each robot; ~85% of volleys get a clear shooter on 4 Oregon matches; team vs partner decided by the shooter's look at the shot; shown as sure–possible range, with a per-volley timeline on the match page |
+| Cameras looking straight down on the hive | ⚠️ robots drive under the hive and the sign rides into the box when it turns: alliance pollen over-counts there (see PLAN); a disc counter for that case exists as a dev tool |
 | Launch counting at the robot (720p) | ❌ dead end at 720p (balls 3-8 px, blurred); the 1080p pass sees them |
 | Field mapping, heatmaps in field coordinates | ⏳ next |
 | Database | ⏳ later |
