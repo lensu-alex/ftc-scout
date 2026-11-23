@@ -3,7 +3,9 @@
 import { teamMatches } from "../src/api/ftcscout";
 const [team, vid, n = "2"] = process.argv.slice(2);
 const { matches } = await teamMatches(+team);
-const sel = matches.filter(m => m.played).slice(-(+n));
+// MATCHES=key,key (e.g. USORSFM1-1,USORSFM1-9) picks specific matches instead of the last n
+const want = process.env.MATCHES?.split(",");
+const sel = want ? matches.filter(m => want.includes(m.key)) : matches.filter(m => m.played).slice(-(+n));
 const r = await fetch("http://127.0.0.1:47615/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ videoId: vid, matches: sel }) });
 const { id } = await r.json();
 const t0 = Date.now();

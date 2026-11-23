@@ -38,6 +38,8 @@ export interface MatchReport {
   candidates?: { trackId: number; thumbUrl: string | null; picked: boolean }[];
   confirmed?: boolean;
   scoring?: Scoring;
+  /** where the hive was found, per camera view (720p coords); empty = not found, so no pollen counts */
+  hives?: { view: number; red: { x: number; y: number; w: number; h: number }; blue: { x: number; y: number; w: number; h: number } }[];
 }
 
 /** Scoring summary from the hive events and (optionally) the per-volley attribution. */
@@ -113,6 +115,7 @@ export async function toReport(
     })) : undefined,
     confirmed,
     scoring: scoring ? scoringOf(a, scoring.alliance, ids, scoring.attribution, scoring.alliancePieces, scoring.calls) : undefined,
+    hives: a.hives.map(h => ({ view: h.view, red: { x: Math.round(h.boxes.red.x), y: Math.round(h.boxes.red.y), w: Math.round(h.boxes.red.w), h: Math.round(h.boxes.red.h) }, blue: { x: Math.round(h.boxes.blue.x), y: Math.round(h.boxes.blue.y), w: Math.round(h.boxes.blue.w), h: Math.round(h.boxes.blue.h) } })),
     robotsTracked: a.robots.length,
     team: robot && identity ? {
       confidence: identity.confidence, needsConfirmation: identity.needsConfirmation,
