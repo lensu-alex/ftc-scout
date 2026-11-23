@@ -532,3 +532,10 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   (collapses). Unresolved volleys count as possible for both robots: the page shows sure–possible.
 - Tracker: a detection overlapping (IoU > 0.45) a track already updated this frame no longer starts a duplicate
   track (ground-truth tracking unchanged at 95% / 85%; Q1 10 pieces instead of 13).
+- Live five-match run (12808 Q1/5/9/14/18, 2026-11-24): Q5 37 balls / team 9–15, Q14 34 / 10–25, Q18 38 / 9–27 fine,
+  but Q1 and Q9 counted 8 and 1 balls: the hive finder returned 60 px boxes (one cell) on the helper's frames. The
+  helper's parallel fetch hands over re-encoded JPEG frames (q 3), which soften the thin red tubes; on the raw clips
+  the same frames are found fine. Fixes: looser tube colours, partial boxes grown to hive proportions (1.3x taller
+  than wide), group width 5–15% of the picture, a penalty for red things low in the picture (a parked red robot
+  won once), and the analysis now takes up to 12 looks and the largest agreeing set. Regression on raw clips:
+  Q1 37 volleys, Q5 36, Q9 41, Michigan/Netherlands unchanged.
