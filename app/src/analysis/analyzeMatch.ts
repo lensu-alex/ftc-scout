@@ -247,7 +247,13 @@ export async function analyzeMatch(
     const pts = merged.filter(r => (remap.get(r.view) ?? r.view) === nv).flatMap(r => r.path);
     const inside = pts.filter(p => p.x >= union.x && p.x <= union.x1 && p.y - 0.45 * p.s >= union.y && p.y - 0.45 * p.s <= union.y1).length;
     const mode = pts.length >= 50 && inside / pts.length >= 0.08 ? "discs" : "area";
-    for (const h of ["red", "blue"] as const) for (const e of hiveEvents(hs.samples[h], ballAreaFor(hs.boxes[h], frameW), 0.6, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
+    for (const h of ["red", "blue"] as const) {
+      // one ball's area: the box-size guess is a floor (from the side, lone blobs are often fragments of balls
+      // half hidden behind the panel); looking down, lone balls are whole discs and much bigger than the guess
+      const guess = ballAreaFor(hs.boxes[h], frameW), seen = hs.watch[h].ballArea();
+      const ballArea = seen !== null ? Math.max(guess, Math.min(4 * guess, seen)) : guess;
+      for (const e of hiveEvents(hs.samples[h], ballArea, 0.6, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
+    }
   }
   hiveEv.sort((a, b) => a.t - b.t);
   return {

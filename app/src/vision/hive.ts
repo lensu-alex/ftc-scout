@@ -7,7 +7,7 @@ import { label } from "./launchEvidence";
 // hive box: every volley is a step up, every hive tip (cell empties into the lower cell) a drop.
 // Works at the analysis rate (~10 fps); no model. The hive box comes per camera view (found or tapped).
 
-export interface HiveSample { t: number; area: number; bumps: number; discs?: number }   // discs: ball-sized yellow blobs (cameras looking down)
+export interface HiveSample { t: number; area: number; bumps: number; discs?: number; hidden?: boolean }   // discs: ball-sized blobs (looking down); hidden: a robot covers the box
 
 export interface HiveEvent {
   t: number;          // midpoint between the plateau before and the one after (the balls arrived shortly before)
@@ -23,6 +23,13 @@ function isPollen(r: number, g: number, b: number) { return r > 150 && g > 150 &
 
 export class HiveWatcher {
   private box: Box;
+  private roundAreas: number[] = [];
+  /** Yellow pixels of one resting ball on this camera, from the lone round blobs seen (null until ~20 were seen). */
+  ballArea(): number | null {
+    if (this.roundAreas.length < 20) return null;
+    const s = [...this.roundAreas].sort((a, b) => a - b);
+    return s[s.length >> 1];
+  }
   // yellow that is there before the match starts (the BIOBUZZ sign, markers, a stray ball) is not pollen scored
   private still: Uint8Array | null = null;
   private stillN = 0;
@@ -54,6 +61,10 @@ export class HiveWatcher {
     const still = this.still && this.stillN >= 3 ? this.still : null, half = this.stillN / 2;
     const rb = robots.map(b => { const m = 0.15 * Math.max(b.w, b.h); return { x0: b.x - m, y0: b.y - m, x1: b.x + b.w + m, y1: b.y + b.h + m }; })
       .filter(b => b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1);
+    // a robot over most of the box hides the hive: that sample says nothing (not "zero balls")
+    let covered = 0;
+    for (const b of rb) covered += (Math.min(b.x1, x1) - Math.max(b.x0, x0)) * (Math.min(b.y1, y1) - Math.max(b.y0, y0));
+    const hidden = covered > 0.5 * w * (y1 - y0);
     let area = 0;
     const hh = y1 - y0, mask = new Uint8Array(w * hh);
     for (let y = y0; y < y1; y++) {
@@ -72,9 +83,11 @@ export class HiveWatcher {
     let discs = 0;
     for (let l = 1; l < sizes.length; l++) {
       const a = sizes[l], bw = bx1[l] - bx0[l], bh = by1[l] - by0[l];
+      const asp = bw / Math.max(1, bh), fill = a / (bw * bh);
+      // a lone round blob of a plausible size: remember its area (what one ball looks like on this camera)
+      if (asp >= 0.7 && asp <= 1.4 && fill >= 0.6 && a >= 20 && a <= 900 && this.roundAreas.length < 4000) this.roundAreas.push(a);
       if (a < 0.35 * one) continue;
-      const asp = bw / Math.max(1, bh);
-      if (asp >= 0.55 && asp <= 1.8 && a / (bw * bh) >= 0.5) discs += Math.max(1, Math.round(a / one));
+      if (asp >= 0.55 && asp <= 1.8 && fill >= 0.5) discs += Math.max(1, Math.round(a / one));
     }
     // bumps in the column profile (smoothed over 5 px), at least a ball apart
     let bumps = 0, last = -100;
@@ -85,7 +98,7 @@ export class HiveWatcher {
       const r = (col[x - 1] + col[x] + col[x + 1] + col[x + 2] + col[Math.min(w - 1, x + 3)]) / 5;
       if (s >= 3 && s >= l && s >= r) { if (x - last >= ball * 0.7) { bumps++; last = x; } }
     }
-    return { t, area, bumps, discs };
+    return { t, area, bumps, discs, hidden };
   }
 }
 
@@ -100,6 +113,7 @@ const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return
 export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6, mode: "area" | "discs" = "area"): { events: HiveEvent[]; scored: number; tips: number; plateaus: { t0: number; t1: number; level: number }[] } {
   const events: HiveEvent[] = [];
   const plateaus: { t0: number; t1: number; level: number }[] = [];
+  samples = samples.filter(s => !s.hidden);
   if (samples.length < 3) return { events, scored: 0, tips: 0, plateaus };
   // cameras looking down: count discs, and a count must hold 2 s (robots drive under the hive)
   if (mode === "discs") { samples = samples.map(s => ({ ...s, area: (s.discs ?? 0) * ballArea })); hold = Math.max(hold, 2); }

@@ -555,3 +555,7 @@ is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are
 - Cameras looking down: when ≥ 8% of the robots' track points fall inside the hive box, the hive is counted in
   disc mode (ball-sized round yellow blobs, a count must hold 2 s). Michigan: 31 → 3 volleys (true 1-2). Side views
   unchanged. Netherlands (high angle, hive at the far end) does not trigger the mode and still over-counts (21).
+- Hive samples with a robot over most of the box are treated as missing (not zero): the Netherlands camera had a
+  robot parked next to the far hive toggling the count (21 → 13 volleys). One ball's area is now measured from lone
+  round blobs seen in the box, used only above the box-size guess (from the side lone blobs are fragments):
+  Netherlands 13 → 5 volleys (true ~2), Michigan 3, Oregon unchanged (36 / 40).
