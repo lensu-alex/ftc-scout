@@ -539,3 +539,14 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   than wide), group width 5–15% of the picture, a penalty for red things low in the picture (a parked red robot
   won once), and the analysis now takes up to 12 looks and the largest agreeing set. Regression on raw clips:
   Q1 37 volleys, Q5 36, Q9 41, Michigan/Netherlands unchanged.
+
+**2026-11-24 overnight summary (user asleep, working unattended)**
+Done: 720p fallback for the launch pass; hive watcher ignores robot boxes; hive finder hardened for the helper's
+JPEG frames (live Q1/Q9 now 37 and 56 alliance balls, same as offline); hive looked for before the start (auto
+volleys caught); team vs partner settled as chain → one-place-at-a-time → looks only when very clear, with honest
+sure–possible ranges; no duplicate tracks; pass-2 bursts fetched 3 at a time; per-volley timeline and a pollen
+summary on the page; 9 regression tests; `scripts/check-all.ts`. Dead ends measured and recorded: burst-crop
+references, 2-means of shot looks, longer plateau holds, colour/persistence rules for the top-down sign.
+Open: top-down cameras over-count alliance pollen (disc counter dev tool is right on Michigan; not integrated);
+the 15% of volleys where both alliance robots are active stay possible-for-both; YouTube's link resolving limit
+is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are still "not now" per the user).
