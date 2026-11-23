@@ -8,7 +8,9 @@ const start = +startS, [x0, y0, x1, y1] = boxS.split(",").map(Number), ballArea 
 const watcher = new HiveWatcher({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
 const samples: HiveSample[] = [];
 const t0 = Date.now();
-for await (const { t, frame } of readFrames(clip, 10, start, 160)) samples.push(watcher.push(t - start, frame));
+for await (const { t, frame } of readFrames(clip, 10, Math.max(0, start - 3), 163)) {
+  if (t < start - 0.5) watcher.learnStill(frame); else samples.push(watcher.push(t - start, frame));
+}
 const ms = Date.now() - t0;
 const { events, scored, tips, plateaus } = hiveEvents(samples, ballArea);
 console.log(`${samples.length} frames in ${(ms / 1000).toFixed(1)} s; ${plateaus.length} plateaus, scored ${scored} balls in ${events.filter(e => e.kind === "scored").length} volleys, ${tips} tips`);

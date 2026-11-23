@@ -413,3 +413,13 @@ Ground truth: the user's 56 hand-marked launches of 12808 in Oregon Q1 (15 volle
   apart merged into one; small steps in the panel-occluded state), 9 tips; counts exact where the row is
   unoccluded (+4, +3), low where the panel hides balls (38 counted vs 56 launched, misses unknown).
   Next: calibrate ball area per hive state; shorter plateaus; attribute volleys to robots; hive box per view.
+- Easier streams first (user, 2026-11-23): the two top-down clips (Netherlands, Michigan) are easy for the camera
+  but useless for pollen: each hive holds 3 nectar and only 1-2 pollen arrive all match (the counter saw them; false
+  steps came from the hive rotating with the yellow BIOBUZZ sign). Real pollen scoring is only on the Oregon side
+  camera (12808). Ran the counter on all 6 Oregon matches, both hives: the alliance with 12808 is ahead every time
+  (Q1 41-14, Q5 47-27, Q9 red 58-23, Q18 45-23, scrimmage Q10 27-4; m1 red 24-1), matching the overlay's direction.
+  By eye on Q5: counts right ±1 with the row in the clear (7, 8), about half when the AprilTag panel is in front.
+  Tried reading the true count from the row swinging into view at each tip: no, the yellow sign swings through the
+  box too (peak 2000+ px). The watcher now ignores yellow present before the match (`learnStill`).
+  Next: panel-state detection (white strip with tags in the box → use half the ball area), hive box per view
+  (tap), and attribution: which alliance robot shot each volley.

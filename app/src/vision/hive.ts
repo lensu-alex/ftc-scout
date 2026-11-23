@@ -21,7 +21,23 @@ function isPollen(r: number, g: number, b: number) { return r > 150 && g > 150 &
 
 export class HiveWatcher {
   private box: Box;
+  // yellow that is there before the match starts (the BIOBUZZ sign, markers, a stray ball) is not pollen scored
+  private still: Uint8Array | null = null;
+  private stillN = 0;
   constructor(box: Box) { this.box = box; }
+
+  /** Call with frames from before the match start: learns the yellow that is always there. */
+  learnStill(f: Frame) {
+    const x0 = Math.max(0, Math.floor(this.box.x)), y0 = Math.max(0, Math.floor(this.box.y));
+    const x1 = Math.min(f.width, Math.ceil(this.box.x + this.box.w)), y1 = Math.min(f.height, Math.ceil(this.box.y + this.box.h));
+    const w = Math.max(0, x1 - x0), h = Math.max(0, y1 - y0);
+    if (!this.still || this.still.length !== w * h) { this.still = new Uint8Array(w * h); this.stillN = 0; }
+    for (let y = 0; y < h; y++) {
+      let p = ((y0 + y) * f.width + x0) * 4;
+      for (let x = 0; x < w; x++, p += 4) if (isPollen(f.data[p], f.data[p + 1], f.data[p + 2])) this.still[y * w + x]++;
+    }
+    this.stillN++;
+  }
 
   /** Yellow inside the hive box: total area and the number of bumps along the row (balls side by side). */
   push(t: number, f: Frame): HiveSample {
@@ -29,10 +45,12 @@ export class HiveWatcher {
     const x1 = Math.min(f.width, Math.ceil(this.box.x + this.box.w)), y1 = Math.min(f.height, Math.ceil(this.box.y + this.box.h));
     const w = Math.max(0, x1 - x0);
     const col = new Float32Array(w);
+    const still = this.still && this.stillN >= 3 ? this.still : null, half = this.stillN / 2;
     let area = 0;
     for (let y = y0; y < y1; y++) {
       let p = (y * f.width + x0) * 4;
       for (let x = 0; x < w; x++, p += 4) {
+        if (still && still[(y - y0) * w + x] > half) continue;
         if (isPollen(f.data[p], f.data[p + 1], f.data[p + 2])) { area++; col[x]++; }
       }
     }
