@@ -1,4 +1,5 @@
 import type { Box, Frame } from "./frame";
+import { label } from "./launchEvidence";
 
 // Pollen scored, read at the hive. Balls launched at the hive land in its up-facing cell and come to
 // rest in a row: there they are big (12-15 px at 720p), bright yellow and still, where at the robot
@@ -6,7 +7,7 @@ import type { Box, Frame } from "./frame";
 // hive box: every volley is a step up, every hive tip (cell empties into the lower cell) a drop.
 // Works at the analysis rate (~10 fps); no model. The hive box comes per camera view (found or tapped).
 
-export interface HiveSample { t: number; area: number; bumps: number }
+export interface HiveSample { t: number; area: number; bumps: number; discs?: number }   // discs: ball-sized yellow blobs (cameras looking down)
 
 export interface HiveEvent {
   t: number;          // midpoint between the plateau before and the one after (the balls arrived shortly before)
@@ -54,13 +55,26 @@ export class HiveWatcher {
     const rb = robots.map(b => { const m = 0.15 * Math.max(b.w, b.h); return { x0: b.x - m, y0: b.y - m, x1: b.x + b.w + m, y1: b.y + b.h + m }; })
       .filter(b => b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1);
     let area = 0;
+    const hh = y1 - y0, mask = new Uint8Array(w * hh);
     for (let y = y0; y < y1; y++) {
       let p = (y * f.width + x0) * 4;
       for (let x = 0; x < w; x++, p += 4) {
         if (still && still[(y - y0) * w + x] > half) continue;
         if (rb.length) { let inR = false; for (const b of rb) if (x + x0 >= b.x0 && x + x0 < b.x1 && y >= b.y0 && y < b.y1) { inR = true; break; } if (inR) continue; }
-        if (isPollen(f.data[p], f.data[p + 1], f.data[p + 2])) { area++; col[x]++; }
+        if (isPollen(f.data[p], f.data[p + 1], f.data[p + 2])) { area++; col[x]++; mask[(y - y0) * w + x] = 1; }
       }
+    }
+    // ball-sized round blobs (seen from above a ball is a clean disc; from the side a row merges and bumps are used)
+    const D = Math.max(6, 0.09 * this.box.w) * 1.4, one = (Math.PI / 4) * D * D;
+    const { lab, sizes } = label(mask, w, hh);
+    const bx0 = new Int32Array(sizes.length).fill(w), bx1 = new Int32Array(sizes.length), by0 = new Int32Array(sizes.length).fill(hh), by1 = new Int32Array(sizes.length);
+    for (let y = 0; y < hh; y++) for (let x = 0; x < w; x++) { const l = lab[y * w + x]; if (!l) continue; if (x < bx0[l]) bx0[l] = x; if (x + 1 > bx1[l]) bx1[l] = x + 1; if (y < by0[l]) by0[l] = y; if (y + 1 > by1[l]) by1[l] = y + 1; }
+    let discs = 0;
+    for (let l = 1; l < sizes.length; l++) {
+      const a = sizes[l], bw = bx1[l] - bx0[l], bh = by1[l] - by0[l];
+      if (a < 0.35 * one) continue;
+      const asp = bw / Math.max(1, bh);
+      if (asp >= 0.55 && asp <= 1.8 && a / (bw * bh) >= 0.5) discs += Math.max(1, Math.round(a / one));
     }
     // bumps in the column profile (smoothed over 5 px), at least a ball apart
     let bumps = 0, last = -100;
@@ -71,7 +85,7 @@ export class HiveWatcher {
       const r = (col[x - 1] + col[x] + col[x + 1] + col[x + 2] + col[Math.min(w - 1, x + 3)]) / 5;
       if (s >= 3 && s >= l && s >= r) { if (x - last >= ball * 0.7) { bumps++; last = x; } }
     }
-    return { t, area, bumps };
+    return { t, area, bumps, discs };
   }
 }
 
@@ -83,10 +97,12 @@ const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return
  * A plateau is a stretch of ≥ `hold` seconds within half a ball of its median; a rise between
  * plateaus is a volley, a fall to under a third of the level is a tip.
  */
-export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6): { events: HiveEvent[]; scored: number; tips: number; plateaus: { t0: number; t1: number; level: number }[] } {
+export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6, mode: "area" | "discs" = "area"): { events: HiveEvent[]; scored: number; tips: number; plateaus: { t0: number; t1: number; level: number }[] } {
   const events: HiveEvent[] = [];
   const plateaus: { t0: number; t1: number; level: number }[] = [];
   if (samples.length < 3) return { events, scored: 0, tips: 0, plateaus };
+  // cameras looking down: count discs, and a count must hold 2 s (robots drive under the hive)
+  if (mode === "discs") { samples = samples.map(s => ({ ...s, area: (s.discs ?? 0) * ballArea })); hold = Math.max(hold, 2); }
   // median filter over ~0.5 s to drop balls flying through
   const dt = (samples[samples.length - 1].t - samples[0].t) / (samples.length - 1);
   const k = Math.max(1, Math.round(0.25 / dt));

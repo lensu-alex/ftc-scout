@@ -18,7 +18,7 @@ function yellowness(f: Frame, out: Int16Array) {
 }
 
 /** Connected components of a boolean mask (4-neighbour), returning per-pixel label and component sizes. */
-function label(mask: Uint8Array, w: number, h: number): { lab: Int32Array; sizes: number[]; cx: number[]; cy: number[] } {
+export function label(mask: Uint8Array, w: number, h: number): { lab: Int32Array; sizes: number[]; cx: number[]; cy: number[] } {
   const lab = new Int32Array(w * h); const sizes: number[] = [0]; const sx: number[] = [0], sy: number[] = [0];
   const stack: number[] = [];
   let n = 0;

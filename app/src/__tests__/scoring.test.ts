@@ -26,6 +26,12 @@ describe("hiveEvents", () => {
     const s = series([[20, 300]]);
     expect(hiveEvents(s, 100).events).toHaveLength(0);
   });
+  it("disc mode: counts hold 2 s before they count (a robot passing under the hive does not)", () => {
+    const s: HiveSample[] = [];
+    for (let t = 0; t < 30; t += 0.1) s.push({ t: +t.toFixed(1), area: 0, bumps: 0, discs: t >= 10 && t < 11 ? 3 : t >= 20 ? 2 : 0 });
+    const { events } = hiveEvents(s, 100, 0.6, "discs");
+    expect(events.filter(e => e.kind === "scored").map(e => e.balls)).toEqual([2]);
+  });
   it("does not call a one-ball drop a tip", () => {
     const s = series([[5, 100], [10, 0]]);
     expect(hiveEvents(s, 100).tips).toBe(0);

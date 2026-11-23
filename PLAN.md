@@ -552,3 +552,6 @@ the 15% of volleys where both alliance robots are active stay possible-for-both;
 is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are still "not now" per the user).
 - Baseline (`check-all quick`, pass 2 on 720p): or1 36 volleys/6 tips, 29/36 clear; or5 40/6, 35/40; or9 44/7, 28/44;
   or18 46/14, 42/46; q10 24/5, 21/24; m1 12/2, 11/12; nlron 21/9 (top-down, over-counts); micoq 31/9 (top-down, over-counts).
+- Cameras looking down: when ≥ 8% of the robots' track points fall inside the hive box, the hive is counted in
+  disc mode (ball-sized round yellow blobs, a count must hold 2 s). Michigan: 31 → 3 volleys (true 1-2). Side views
+  unchanged. Netherlands (high angle, hive at the far end) does not trigger the mode and still over-counts (21).

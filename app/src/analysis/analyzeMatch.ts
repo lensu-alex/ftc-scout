@@ -242,7 +242,12 @@ export async function analyzeMatch(
   for (const [v, hs] of hives) {
     const nv = remap.get(v) ?? v;
     hiveOut.push({ view: nv, boxes: hs.boxes });
-    for (const h of ["red", "blue"] as const) for (const e of hiveEvents(hs.samples[h], ballAreaFor(hs.boxes[h], frameW)).events) hiveEv.push({ ...e, hive: h, view: nv });
+    // robots driving through the hive box = the camera looks down on the hive: count discs instead of area
+    const union = { x: Math.min(hs.boxes.red.x, hs.boxes.blue.x), y: Math.min(hs.boxes.red.y, hs.boxes.blue.y), x1: Math.max(hs.boxes.red.x + hs.boxes.red.w, hs.boxes.blue.x + hs.boxes.blue.w), y1: Math.max(hs.boxes.red.y + hs.boxes.red.h, hs.boxes.blue.y + hs.boxes.blue.h) };
+    const pts = merged.filter(r => (remap.get(r.view) ?? r.view) === nv).flatMap(r => r.path);
+    const inside = pts.filter(p => p.x >= union.x && p.x <= union.x1 && p.y - 0.45 * p.s >= union.y && p.y - 0.45 * p.s <= union.y1).length;
+    const mode = pts.length >= 50 && inside / pts.length >= 0.08 ? "discs" : "area";
+    for (const h of ["red", "blue"] as const) for (const e of hiveEvents(hs.samples[h], ballAreaFor(hs.boxes[h], frameW), 0.6, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
   }
   hiveEv.sort((a, b) => a.t - b.t);
   return {
