@@ -35,6 +35,8 @@ export class ShotLooks {
 
 export interface TeamCall { volley: number; who: "team" | "partner" | null; margin: number; byLook: number | null; byChain: "team" | "partner" | null }
 
+export interface TeamCall { volley: number; who: "team" | "partner" | null; margin: number; byLook: number | null; byChain: "team" | "partner" | null }
+
 /**
  * References in the same domain as the shot looks (crops from the bursts), which compare far better than the
  * 720p track embeddings: the team's looks = shots by its identified piece(s); the partner's = shots by pieces that
