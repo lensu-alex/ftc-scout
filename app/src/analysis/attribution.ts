@@ -14,7 +14,10 @@ export interface Attribution {
 export function attributeVolleys(
   events: (HiveEvent & { hive: "red" | "blue" })[], samples: EvidenceSample[], launches: Launch[],
   alliance: (robotId: number) => "red" | "blue" | null,
+  win: { before: number; after: number; fromRise?: boolean } = { before: 1.7, after: 0.3 },
 ): Attribution[] {
+  // the window before the arrival where the launch happened
+  const windowOf = (e: HiveEvent) => { const ref = win.fromRise && e.riseAt !== undefined ? e.riseAt : e.t; return [ref - win.before, ref - win.after] as const; };
   // usual level per robot (60th percentile of its pixel evidence over all samples)
   const per = new Map<number, number[]>();
   for (const s of samples) for (const [id, v] of s.above) (per.get(id) ?? per.set(id, []).get(id)!).push(v.px);
@@ -29,7 +32,8 @@ export function attributeVolleys(
       const sum = { red: 0, blue: 0 };
       for (const e of events) {
         if (e.kind !== "scored") continue;
-        const win = samples.filter(s => s.t >= e.t - 1.7 && s.t <= e.t - 0.3);
+        const [w0, w1] = windowOf(e);
+        const win = samples.filter(s => s.t >= w0 && s.t <= w1);
         const vals = win.map(s => s.above.get(id)?.px).filter((v): v is number => v !== undefined);
         if (vals.length >= 10) sum[e.hive] += vals.reduce((a, v) => a + v, 0) / ((base.get(id) ?? 1) * vals.length);
       }
@@ -40,7 +44,7 @@ export function attributeVolleys(
   const out: Attribution[] = [];
   for (const e of events) {
     if (e.kind !== "scored") continue;
-    const T = e.t, win = samples.filter(s => s.t >= T - 1.7 && s.t <= T - 0.3);
+    const T = e.t, [w0, w1] = windowOf(e), win = samples.filter(s => s.t >= w0 && s.t <= w1);
     const score = new Map<number, { s: number; px: number; rel: number; blobs: number; launches: number }>();
     const ids = new Set<number>(); for (const s of win) for (const id of s.above.keys()) ids.add(id);
     for (const id of ids) {
@@ -50,7 +54,7 @@ export function attributeVolleys(
       if (vals.length < 10) continue;
       const px = vals.reduce((a, v) => a + v.px, 0), blobs = vals.reduce((a, v) => a + v.blobs, 0);
       const rel = px / ((base.get(id) ?? 1) * vals.length);
-      const nl = launches.filter(l => l.robot === id && l.t >= T - 2.0 && l.t <= T - 0.3).length;
+      const nl = launches.filter(l => l.robot === id && l.t >= w0 - 0.3 && l.t <= w1).length;
       score.set(id, { s: Math.log1p(px) + 0.8 * Math.log1p(rel) + 0.5 * Math.log1p(blobs) + 1.2 * nl, px, rel, blobs, launches: nl });
     }
     const ranked = [...score.entries()].sort((a, b) => b[1].s - a[1].s);

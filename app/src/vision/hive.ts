@@ -9,7 +9,8 @@ import type { Box, Frame } from "./frame";
 export interface HiveSample { t: number; area: number; bumps: number }
 
 export interface HiveEvent {
-  t: number;
+  t: number;          // midpoint between the plateau before and the one after (the balls arrived shortly before)
+  riseAt?: number;    // scored: when the new, higher plateau began (the last ball had just landed)
   kind: "scored" | "tip";
   balls?: number;     // scored: how many balls arrived in this volley (estimate, ±1)
   from: number;       // yellow area before / after, for tuning
@@ -105,7 +106,7 @@ export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6): {
     const d = b.level - a.level;
     if (d >= 0.6 * ballArea) {
       const balls = Math.max(1, Math.round(d / ballArea));
-      events.push({ t: (a.t1 + b.t0) / 2, kind: "scored", balls, from: a.level, to: b.level }); scored += balls;
+      events.push({ t: (a.t1 + b.t0) / 2, riseAt: b.t0, kind: "scored", balls, from: a.level, to: b.level }); scored += balls;
     } else if (a.level >= 1.5 * ballArea && b.level < 0.35 * a.level) {
       events.push({ t: (a.t1 + b.t0) / 2, kind: "tip", from: a.level, to: b.level }); tips++;
     }

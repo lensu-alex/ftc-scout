@@ -68,7 +68,8 @@ for (const e of events) {
   ev.flush(robots); bursts++; kept.push(keep);
 }
 console.log(`pass 2: ${bursts} bursts, ${ev.samples.length} frames, ${ev.launches.length} tracked launches in ${((Date.now() - t1) / 1000).toFixed(0)} s`);
-const att = attributeVolleys(events, ev.samples, ev.launches, alliance);
+const W = process.env.ATT_WIN ? (() => { const [b, a, r] = process.env.ATT_WIN!.split(","); return { before: +b, after: +a, fromRise: r === "rise" }; })() : undefined;
+const att = attributeVolleys(events, ev.samples, ev.launches, alliance, W);
 for (const x of att) console.log(`${x.hive.padEnd(4)} ${x.t.toFixed(2).padStart(7)} +${x.balls} → robot ${x.robot} conf ${x.confidence.toFixed(2)} | ${x.evidence.map(v => `${v.robot}:${v.px}px ${v.rel}x ${v.blobs}b ${v.launches}L`).join("  ")}`);
 const pr = perRobot(att);
 console.log("per robot: " + [...pr.entries()].sort((p, q) => p[0] - q[0]).map(([r, v]) => `${r}: ${v.sure} sure + ${v.unsure} unsure (${v.volleys} volleys)`).join("  "));
