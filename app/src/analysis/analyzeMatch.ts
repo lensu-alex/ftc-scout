@@ -112,10 +112,10 @@ export async function analyzeMatch(
     if (elapsed > MATCH_S + 2) break;
     if (curView >= 0) {
       let hs = hives.get(curView);
-      // find the hive once play is on (people have left the field): a look every 2.5 s, up to 12; the watch
-      // starts when 3 looks agree (the finder misses or grabs the wrong red thing on some frames)
+      // find the hive from just before the start: a look every 2.5 s, up to 14; the watch starts when 3 looks
+      // agree (the finder misses or grabs the wrong red thing on some frames, e.g. a red shirt behind the hive)
       const tries = hiveTries.get(curView) ?? { n: 0, last: -Infinity, finds: [] as HiveBoxes[] };
-      if (!hs && elapsed >= 1 && tries.n < 12 && t - tries.last >= 2.5) {
+      if (!hs && elapsed >= -3 && tries.n < 14 && t - tries.last >= 2.5) {
         tries.n++; tries.last = t; hiveTries.set(curView, tries);
         const found = findHive(frame);
         if (found && plausibleHive(found, frame.width)) tries.finds.push(found);

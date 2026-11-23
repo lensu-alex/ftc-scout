@@ -24,7 +24,7 @@ const t0 = Date.now();
 const a: MatchAnalysis = await analyzeMatch(readFrames(clip720, 10, Math.max(0, start720 - 3), 165), start720, new TinyOverlayReader(), { infer: nodeInfer, embedInfer: nodeEmbed, detectSize: detectorSize(), tiles: true });
 const events: (HiveEvent & { hive: "red" | "blue" })[] = a.hiveEvents;
 console.log(`pass 1: ${a.robots.length} robot tracks, hive ${JSON.stringify(a.hives.map(h => ({ view: h.view, red: Object.values(h.boxes.red).map(Math.round), blue: Object.values(h.boxes.blue).map(Math.round) })))}`);
-console.log(`        ${events.filter(e => e.kind === "scored").length} volleys, ${events.filter(e => e.kind === "tip").length} tips in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`        ${events.filter(e => e.kind === "scored").length} volleys, ${events.filter(e => e.kind === "tip").length} tips in ${((Date.now() - t0) / 1000).toFixed(0)} s; first ${events.slice(0, 3).map(e => `${e.kind[0]}@${e.t.toFixed(1)}`).join(" ")}`);
 // alliance per track: from the robot groups' starting side (or the ALLIANCE env when given)
 const groups = robotGroups(a, "Blue");
 const ga = groupAlliances(a, groups, "Blue");
