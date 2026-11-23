@@ -112,14 +112,16 @@ export async function analyzeMatch(
     if (elapsed > MATCH_S + 2) break;
     if (curView >= 0) {
       let hs = hives.get(curView);
-      // find the hive once play is on (people have left the field), from 3 looks a few seconds apart
+      // find the hive once play is on (people have left the field): a look every 2.5 s, up to 12; the watch
+      // starts when 3 looks agree (the finder misses or grabs the wrong red thing on some frames)
       const tries = hiveTries.get(curView) ?? { n: 0, last: -Infinity, finds: [] as HiveBoxes[] };
-      if (!hs && elapsed >= 1 && tries.n < 8 && t - tries.last >= 2.5) {
+      if (!hs && elapsed >= 1 && tries.n < 12 && t - tries.last >= 2.5) {
         tries.n++; tries.last = t; hiveTries.set(curView, tries);
         const found = findHive(frame);
         if (found && plausibleHive(found, frame.width)) tries.finds.push(found);
-        if (tries.finds.length >= 3 || (tries.finds.length >= 1 && tries.n >= 8)) {
-          const boxes = medianHive(tries.finds);
+        const agreed = largestAgreeing(tries.finds);
+        if (agreed.length >= 3 || (agreed.length >= 2 && tries.n >= 12)) {
+          const boxes = medianHive(agreed);
           hs = { boxes, watch: { red: new HiveWatcher(watchBox(boxes, "red")), blue: new HiveWatcher(watchBox(boxes, "blue")) }, samples: { red: [], blue: [] }, tries: tries.n, lastTry: t };
           hives.set(curView, hs);
         }
@@ -255,9 +257,22 @@ export async function analyzeMatch(
 function plausibleHive(h: HiveBoxes, W: number) {
   const r = h.red, b = h.blue, ratio = r.w / Math.max(1, b.w);
   if (ratio < 0.6 || ratio > 1.6) return false;
+  if (b.h < 0.4 * r.h || r.h < 0.4 * b.h) return false;      // a sliver is not the other see-saw
   if (r.w > 0.22 * W || b.w > 0.22 * W) return false;
   const overlap = Math.min(r.x + r.w, b.x + b.w) - Math.max(r.x, b.x);
   return overlap < 0.3 * Math.min(r.w, b.w);
+}
+/** The biggest set of looks that agree on the red box (centre within 25% of its width, size within 30%). */
+function largestAgreeing(hs: HiveBoxes[]): HiveBoxes[] {
+  let best: HiveBoxes[] = [];
+  for (const a of hs) {
+    const grp = hs.filter(b => {
+      const cx = Math.abs((b.red.x + b.red.w / 2) - (a.red.x + a.red.w / 2)), cy = Math.abs((b.red.y + b.red.h / 2) - (a.red.y + a.red.h / 2));
+      return cx <= 0.25 * a.red.w && cy <= 0.25 * a.red.h && b.red.w / a.red.w >= 0.7 && b.red.w / a.red.w <= 1.43;
+    });
+    if (grp.length > best.length) best = grp;
+  }
+  return best;
 }
 function medianHive(hs: HiveBoxes[]): HiveBoxes {
   const med = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s[s.length >> 1]; };

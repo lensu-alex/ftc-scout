@@ -65,8 +65,8 @@ export function findHive(f: Frame): HiveBoxes | null {
   const yMax = Math.floor(0.8 * H), xMin = Math.floor(0.15 * W), xMax = Math.floor(0.85 * W);
   for (let y = 0; y < yMax; y++) for (let x = xMin; x < xMax; x++) {
     const p = (y * W + x) * 4, r = d[p], g = d[p + 1], b = d[p + 2];
-    if (r > 110 && g < 0.45 * r && b < 0.6 * r) red[y * W + x] = 1;
-    if (b > 100 && r < 0.55 * b && g < 0.8 * b && b - r > 70) blue[y * W + x] = 1;
+    if (r > 105 && g < 0.5 * r && b < 0.65 * r) red[y * W + x] = 1;
+    if (b > 95 && r < 0.6 * b && g < 0.82 * b && b - r > 60) blue[y * W + x] = 1;
   }
   const R = Math.round(6 * W / 1280);              // tubes are 3-10 px at 720p
   const rt = thin(red, W, H, R);
@@ -84,10 +84,18 @@ export function findHive(f: Frame): HiveBoxes | null {
     }
     if (!placed) groups.push({ ...c });
   }
-  const ok = groups.filter(g => Math.max(g.x1 - g.x0, g.y1 - g.y0) <= 0.35 * W);
+  // a hive is at least ~5% of the picture wide; prefer big outline groups near the middle
+  // one see-saw is 5-15% of the picture wide (143 px of 1280 on the Oregon camera, 109 from above)
+  const ok = groups.filter(g => g.x1 - g.x0 >= 0.05 * W && g.x1 - g.x0 <= 0.15 * W && g.y1 - g.y0 <= 0.45 * H);
   if (!ok.length) return null;
-  const rg = ok.reduce((a, g) => (g.area / (1 + Math.abs((g.x0 + g.x1) / 2 - W / 2) / (0.2 * W)) > a.area / (1 + Math.abs((a.x0 + a.x1) / 2 - W / 2) / (0.2 * W)) ? g : a));
-  const rw = rg.x1 - rg.x0, rh = rg.y1 - rg.y0;
+  // the hive stands above the floor: a red robot or marking low in the picture is not it
+  const score = (g: Comp) => g.area / (1 + Math.abs((g.x0 + g.x1) / 2 - W / 2) / (0.2 * W)) * ((g.y0 + g.y1) / 2 < 0.55 * H ? 1 : 0.3);
+  const rg = ok.reduce((a, g) => (score(g) > score(a) ? g : a));
+  // the outline is often found only in part (a cell, or the tubes facing the camera): a hive is two cells
+  // stacked, about 1.3x taller than wide from the side, so the box is grown downwards to that shape
+  const rw = rg.x1 - rg.x0;
+  if (rg.y1 - rg.y0 < 1.2 * rw) rg.y1 = Math.min(H, rg.y0 + Math.round(1.3 * rw));
+  const rh = rg.y1 - rg.y0;
   const bt = thin(blue, W, H, R);
   const count = (x0: number, y0: number, x1: number, y1: number) => {
     let n = 0;
