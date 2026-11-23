@@ -488,3 +488,8 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   it in time are the partner; the rest go by looks + reachability; weak placements count as unsure. Report shows the
   team's pollen as "sure–possible". Offline on Q1 (seed = the 12808 piece): team 17 sure + rest unsure of the blue 41;
   Q5: team 22 sure, partner 10, of 35. Live YouTube retest pending (rate limit after the day's fetches).
+- Honest state of the team/partner split (Q1, seed = 12808 piece): team 7 sure + 21 possible, partner 3 + 10, of 41.
+  The per-volley shooter is clear ~85% of the time; what is NOT solid is which track pieces belong to which robot
+  (the tracker swaps and duplicates pieces when both alliance robots sit under the hive). This is now the main lever:
+  read the team-number plates from the 1080p bursts (readable by eye: 11703, 12808) to pin every piece to a team,
+  which also replaces the "which one is your team" tap. Then the team's count collapses to one number.

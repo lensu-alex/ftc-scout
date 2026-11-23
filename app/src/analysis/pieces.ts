@@ -44,7 +44,9 @@ export function splitAlliance(a: MatchAnalysis, alliancePieces: number[], teamSe
       const hitsA = A.some(c => overlaps(c, p)), hitsB = B.some(c => overlaps(c, p));
       if (hitsA && !hitsB) { B.push(p); pending.splice(pending.indexOf(p), 1); changed = true; }
       else if (hitsB && !hitsA) { A.push(p); pending.splice(pending.indexOf(p), 1); changed = true; }
-      else if (hitsA && hitsB) { unsure.push(p.id); pending.splice(pending.indexOf(p), 1); changed = true; }   // a third thing (noise)
+      else if (hitsA && hitsB) {                                   // overlaps both: a duplicate track or a swap; place by looks, unsure
+        unsure.push(p.id); (fit(p, A) >= fit(p, B) ? A : B).push(p); pending.splice(pending.indexOf(p), 1); changed = true;
+      }
     }
   }
   // the rest by looks and reachability, most-seen first
