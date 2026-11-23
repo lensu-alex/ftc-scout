@@ -72,7 +72,7 @@ if (process.env.SEED) {
   const seed = +process.env.SEED, mine = (alliance(seed) ?? "blue") as "red" | "blue";
   const alliancePieces = [...new Set([...a.robots.filter(r => alliance(r.id) === mine).map(r => r.id), ...att.flatMap(x => (x.robot !== null && x.hive === mine ? [x.robot] : []))])];
   const sp = splitAlliance(a, alliancePieces, [seed]);
-  const balls = (ids: number[]) => att.filter(x => x.hive === mine && x.robot !== null && ids.includes(x.robot)).reduce((acc, x) => { (x.confidence >= 0.6 ? acc.sure : acc.unsure) += x.balls; return acc; }, { sure: 0, unsure: 0 });
+  const balls = (ids: number[]) => att.filter(x => x.hive === mine && x.robot !== null && ids.includes(x.robot)).reduce((acc, x) => { if (x.confidence >= 0.6 && !sp.unsure.includes(x.robot!)) acc.sure += x.balls; else acc.unsure += x.balls; return acc; }, { sure: 0, unsure: 0 });
   console.log(`split (${mine}): team pieces ${JSON.stringify(sp.team)} partner ${JSON.stringify(sp.partner)} unsure ${JSON.stringify(sp.unsure)}`);
   console.log(`team balls ${JSON.stringify(balls(sp.team))}  partner ${JSON.stringify(balls(sp.partner))}  alliance total ${att.filter(x => x.hive === mine).reduce((n, x) => n + x.balls, 0)}`);
 }

@@ -5,7 +5,7 @@ import { cosine } from "../vision/appearance";
 // robot A, and every other piece of the alliance goes to A or B: pieces that overlap in time are different
 // robots, otherwise the piece joins the robot it looks like and could have been reached from.
 
-export interface Split { team: number[]; partner: number[]; unsure: number[] }
+export interface Split { team: number[]; partner: number[]; unsure: number[] }   // unsure ⊂ team ∪ partner: placed by a weak preference
 
 type P = MatchAnalysis["robots"][number];
 const first = (r: P) => r.path[0], last = (r: P) => r.path[r.path.length - 1];
@@ -50,8 +50,8 @@ export function splitAlliance(a: MatchAnalysis, alliancePieces: number[], teamSe
   // the rest by looks and reachability, most-seen first
   for (const p of pending) {
     const fa = A.length ? fit(p, A) : 0.5, fb = B.length ? fit(p, B) : 0.5;
-    if (Math.abs(fa - fb) < 0.08) { unsure.push(p.id); continue; }
-    (fa > fb ? A : B).push(p);
+    if (Math.abs(fa - fb) < 0.08) unsure.push(p.id);          // placed, but its volleys count as unsure
+    (fa >= fb ? A : B).push(p);
   }
   return { team: A.map(r => r.id), partner: B.map(r => r.id), unsure };
 }

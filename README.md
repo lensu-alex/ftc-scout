@@ -19,7 +19,8 @@ npm run dev        # terminal 2: open the printed localhost URL in any browser
 If YouTube says "confirm you're not a bot" (too many requests from one computer), wait a while, or start the
 helper with `FTC_YT_BROWSER=safari npm run helper` to use your browser's YouTube login (reads its cookies; off by default).
 
-The helper downloads `yt-dlp` once into `~/.ftc-scout/bin` (ffmpeg comes with `npm install`).
+The helper downloads `yt-dlp` once into `~/.ftc-scout/bin` (ffmpeg comes with `npm install`). It reads the match at 720p, then
+short 1080p bursts (1.6 s before each volley the hive saw) to tell which robot shot; streams without 1080p get alliance totals only.
 
 ### Backup match data (official FTC Events API)
 When FTCScout is down the helper uses FIRST's official API. Get a free key at
@@ -46,8 +47,9 @@ https://ftc-events.firstinspires.org/services/API, then create `~/.ftc-scout/con
 | Robot tracking + identification (which robot is the team) | ✅ ≈0 identity switches; team followed 36–83% of a match on the hardest test stream |
 | "Which one is your team?" (only when unsure) | ✅ tap a picture once, every match is re-identified |
 | Team stats from video (distance, speed, time moving, heatmap, flags) | ✅ (helper mode) |
-| Scored pollen per volley + hive tips (counted inside the hive cell) | 🔬 feasible on Oregon Q1: every marked volley = one step; per-ball count ±1 after calibration (see PLAN 2026-11-23) |
-| Launch counting at the robot | ❌ dead end at 720p (balls 3-8 px, blurred) |
+| Pollen scored per alliance + hive tips (read inside the hive, found automatically per camera view) | ✅ helper; ±1 ball per volley |
+| Pollen scored per robot (team vs partner) | ✅ helper pass 2: 1080p bursts before each volley, launch evidence above each robot; ~85% of volleys get a clear shooter on 4 Oregon matches; shown as sure–possible range |
+| Launch counting at the robot (720p) | ❌ dead end at 720p (balls 3-8 px, blurred); the 1080p pass sees them |
 | Field mapping, heatmaps in field coordinates | ⏳ next |
 | Database | ⏳ later |
 

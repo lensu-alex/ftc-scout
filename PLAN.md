@@ -484,3 +484,7 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   Gap found: the team's count only uses the identified track pieces; the alliance's other pieces count as the
   partner. Needed: assign every piece of the alliance to one of its two robots (time overlap = different robots,
   then appearance + handover), so team vs partner is a full split.
+- Team vs partner (`analysis/pieces.ts splitAlliance`): the team's identified piece seeds robot A; pieces that overlap
+  it in time are the partner; the rest go by looks + reachability; weak placements count as unsure. Report shows the
+  team's pollen as "sure–possible". Offline on Q1 (seed = the 12808 piece): team 17 sure + rest unsure of the blue 41;
+  Q5: team 22 sure, partner 10, of 35. Live YouTube retest pending (rate limit after the day's fetches).

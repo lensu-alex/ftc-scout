@@ -51,12 +51,14 @@ export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSe
     return { t: +e.t.toFixed(2), hive: e.hive, balls: e.balls ?? 0, robot: at?.robot ?? null, confidence: at ? +at.confidence.toFixed(2) : 0 };
   });
   const mine = teamAlliance.toLowerCase() as "red" | "blue";
+  // a volley is sure for a robot when the shooter was clear AND the piece's robot is clear
   const sum = (pick: (v: (typeof volleys)[number]) => boolean) => {
     const vs = volleys.filter(v => v.hive === mine && v.robot !== null && pick(v));
-    return { sure: vs.filter(v => v.confidence >= 0.6).reduce((n, v) => n + v.balls, 0), unsure: vs.filter(v => v.confidence < 0.6).reduce((n, v) => n + v.balls, 0), volleys: vs.length };
+    const sureV = (v: (typeof volleys)[number]) => v.confidence >= 0.6 && !split.unsure.includes(v.robot!);
+    return { sure: vs.filter(sureV).reduce((n, v) => n + v.balls, 0), unsure: vs.filter(v => !sureV(v)).reduce((n, v) => n + v.balls, 0), volleys: vs.length };
   };
   const team = attribution && teamTracks.length ? sum(v => teamTracks.includes(v.robot!)) : null;
-  const partner = attribution && teamTracks.length ? sum(v => !teamTracks.includes(v.robot!) && !split.unsure.includes(v.robot!)) : null;
+  const partner = attribution && teamTracks.length ? sum(v => split.partner.includes(v.robot!)) : null;
   return { hive, volleys, team, partner, attributed: !!attribution };
 }
 
