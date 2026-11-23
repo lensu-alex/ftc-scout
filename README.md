@@ -76,6 +76,7 @@ Overlay scores are never read or used.
 | `e2e-browser.ts <team>` | the page in Chromium, start to results (`SAFARI=1` = no Region Capture) |
 | `eval-track.ts <clip> <start>` | tracking: tracks per match, coverage, identity jumps, path picture |
 | `eval-hive.ts <clip> <start> x0,y0,x1,y1 [marks.json]` | pollen scored + hive tips read inside the hive box, against hand-marked launches |
+| `check-all.ts [quick]` | the offline regression over every local clip: volleys, tips, clear-shooter share, hive box |
 | `eval-pass2.ts <clip720> <start> <clip1080> <start> <blueBox> <redBox>` | two passes: robots + hive volleys at 720p, then 1080p bursts before each volley → which robot scored it (`ALLIANCE` env = track ids per alliance) |
 | `_detcount.ts`, `_detviz.ts`, `_flight.ts`, `_shot.ts`, `_confirm.ts` | scratch checks: robots per frame, boxes on a frame, ball flights, page screenshots, the confirmation flow |
 
