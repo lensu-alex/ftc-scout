@@ -36,8 +36,31 @@ export class ShotLooks {
 export interface TeamCall { volley: number; who: "team" | "partner" | null; margin: number; byLook: number | null; byChain: "team" | "partner" | null }
 
 /**
- * Final call per volley. Looks decide when the shooter resembles one reference clearly more than the other;
- * otherwise the chain (which robot its track piece was placed with) decides; both unsure → null.
+ * References in the same domain as the shot looks (crops from the bursts), which compare far better than the
+ * 720p track embeddings: the team's looks = shots by its identified piece(s); the partner's = shots by pieces that
+ * were on screen at the same time as the team's piece (so cannot be the team). Falls back to the track embeddings.
+ */
+export function burstLooks(att: Attribution[], shotLook: (i: number) => Float32Array | null, seed: number[], overlapping: number[], fallback: Looks): Looks {
+  const team: Float32Array[] = [], partner: Float32Array[] = [];
+  att.forEach((a, i) => {
+    if (a.robot === null || a.confidence < 0.6) return;
+    const e = shotLook(i); if (!e) return;
+    if (seed.includes(a.robot)) team.push(e); else if (overlapping.includes(a.robot)) partner.push(e);
+  });
+  return { team: team.length ? team : fallback.team, partner: partner.length ? partner : fallback.partner };
+}
+
+/** Pieces of the alliance that were on screen at the same time as any seed piece. */
+export function overlappingPieces(robots: { id: number; path: { t: number }[] }[], seed: number[], alliancePieces: number[]): number[] {
+  const span = (r: (typeof robots)[number]) => [r.path[0].t, r.path[r.path.length - 1].t] as const;
+  const S = robots.filter(r => seed.includes(r.id));
+  return robots.filter(r => alliancePieces.includes(r.id) && !seed.includes(r.id) && S.some(s => { const [a0, a1] = span(s), [b0, b1] = span(r); return a0 < b1 && b0 < a1; })).map(r => r.id);
+}
+
+/**
+ * Final call per volley. The chain (which robot the shooter's track piece belongs to) decides when it is sure;
+ * the shooter's look at the shot breaks ties when the chain is unsure (the looks alone proved too weak to lead:
+ * the 128 px embeddings of blurred robots drift with background and distance); both unsure → a weak look call.
  */
 export function callVolleys(att: Attribution[], looks: Looks, shotLook: (i: number) => Float32Array | null, chain: { team: number[]; partner: number[]; unsure: number[] }, seed: number[] = []): TeamCall[] {
   return att.map((a, i) => {
@@ -49,9 +72,9 @@ export function callVolleys(att: Attribution[], looks: Looks, shotLook: (i: numb
     if (e && looks.team.length && looks.partner.length) byLook = nearest(e, looks.team) - nearest(e, looks.partner);
     else if (e && looks.team.length) byLook = nearest(e, looks.team) - 0.8;      // no partner look: is it the team or not?
     let who: "team" | "partner" | null = null, margin = 0;
-    if (byLook !== null && Math.abs(byLook) >= 0.04) { who = byLook > 0 ? "team" : "partner"; margin = Math.min(1, Math.abs(byLook) / 0.12); }
-    else if (byChain) { who = byChain; margin = 0.5; }
-    else if (byLook !== null) { who = byLook > 0 ? "team" : "partner"; margin = 0.25; }
+    if (byChain) { who = byChain; margin = 0.6; }
+    else if (byLook !== null && Math.abs(byLook) >= 0.06) { who = byLook > 0 ? "team" : "partner"; margin = Math.min(0.45, Math.abs(byLook)); }
+    else if (byLook !== null) { who = byLook > 0 ? "team" : "partner"; margin = 0.2; }
     return { volley: i, who, margin, byLook, byChain };
   });
 }
