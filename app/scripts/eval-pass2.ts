@@ -10,6 +10,7 @@ import type { HiveEvent } from "../src/vision/hive";
 import { groupAlliances, robotGroups } from "../src/analysis/run";
 import { LaunchEvidence, type RobotBoxAt } from "../src/vision/launchEvidence";
 import { attributeVolleys, perRobot } from "../src/analysis/attribution";
+import { splitAlliance } from "../src/analysis/pieces";
 const [clip720, s720, clip1080, s1080, blueS, redS] = process.argv.slice(2);
 const start720 = +s720, start1080 = +s1080;
 const box = (s: string) => { const [x0, y0, x1, y1] = s.split(",").map(Number); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
@@ -66,3 +67,12 @@ for (const x of att) console.log(`${x.hive.padEnd(4)} ${x.t.toFixed(2).padStart(
 const pr = perRobot(att);
 console.log("per robot: " + [...pr.entries()].sort((p, q) => p[0] - q[0]).map(([r, v]) => `${r}: ${v.sure} sure + ${v.unsure} unsure (${v.volleys} volleys)`).join("  "));
 console.log(`clear volleys: ${att.filter(x => x.confidence >= 0.6).length} / ${att.length}`);
+// SEED=<track id> : the team's identified piece; every blue/red piece of its alliance is then split team / partner
+if (process.env.SEED) {
+  const seed = +process.env.SEED, mine = (alliance(seed) ?? "blue") as "red" | "blue";
+  const alliancePieces = [...new Set([...a.robots.filter(r => alliance(r.id) === mine).map(r => r.id), ...att.flatMap(x => (x.robot !== null && x.hive === mine ? [x.robot] : []))])];
+  const sp = splitAlliance(a, alliancePieces, [seed]);
+  const balls = (ids: number[]) => att.filter(x => x.hive === mine && x.robot !== null && ids.includes(x.robot)).reduce((acc, x) => { (x.confidence >= 0.6 ? acc.sure : acc.unsure) += x.balls; return acc; }, { sure: 0, unsure: 0 });
+  console.log(`split (${mine}): team pieces ${JSON.stringify(sp.team)} partner ${JSON.stringify(sp.partner)} unsure ${JSON.stringify(sp.unsure)}`);
+  console.log(`team balls ${JSON.stringify(balls(sp.team))}  partner ${JSON.stringify(balls(sp.partner))}  alliance total ${att.filter(x => x.hive === mine).reduce((n, x) => n + x.balls, 0)}`);
+}

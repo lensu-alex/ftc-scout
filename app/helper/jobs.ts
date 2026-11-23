@@ -64,13 +64,14 @@ export function createJob(videoId: string, matches: TeamMatch[]): Job {
 
 const attributions = new Map<string, Map<string, Attribution[] | null>>();
 const allianceOf = (job: Job, key: string): "Red" | "Blue" => job.matches.find(m => m.key === key)?.alliance ?? "Blue";   // job id → match key → volleys attributed
-const scoringFor = (job: Job, key: string, alliance: "Red" | "Blue") => ({ alliance, attribution: attributions.get(job.id)?.get(key) ?? null });
+const alliancePieces = new Map<string, Map<string, number[]>>();            // job id → match key → track ids on the team's alliance
+const scoringFor = (job: Job, key: string, alliance: "Red" | "Blue") => ({ alliance, attribution: attributions.get(job.id)?.get(key) ?? null, alliancePieces: alliancePieces.get(job.id)?.get(key) });
 
 /**
  * Pass 2: who shot each volley. For every volley the hive saw, a short 1080p burst (the 1.6 s before the
  * balls arrived) is read from the stream and the launch evidence above each robot is measured.
  */
-async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void): Promise<Attribution[] | null> {
+async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void, onPieces: (ids: number[]) => void): Promise<Attribution[] | null> {
   const volleys = a.hiveEvents.filter(e => e.kind === "scored");
   if (!volleys.length) return [];
   const SC = 1920 / 1280;
@@ -101,6 +102,10 @@ async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: M
   const trackAlliance = new Map<number, "red" | "blue" | null>();
   for (const g of groups) for (const id of g.ids) trackAlliance.set(id, ga.get(g.rep) ?? null);
   const att = attributeVolleys(a.hiveEvents, ev.samples, ev.launches, id => trackAlliance.get(id) ?? null);
+  // the pieces on the team's alliance (by start side, markings, or the hive their launches fed)
+  const mine = m.alliance.toLowerCase() as "red" | "blue";
+  const inferred = att.flatMap(x => (x.robot !== null && x.hive === mine ? [x.robot] : []));
+  onPieces([...new Set([...a.robots.filter(r => trackAlliance.get(r.id) === mine).map(r => r.id), ...inferred])]);
   say(`${m.description}: ${att.filter(x => x.confidence >= 0.6).length} of ${att.length} volleys attributed (${got} bursts)`);
   return att;
 }
@@ -141,9 +146,11 @@ async function run(job: Job, signal: AbortSignal) {
         attributions.set(job.id, per);
         try {
           const hd = await resolveStream(job.videoId, false, 1080);
+          const pieces = alliancePieces.get(job.id) ?? new Map<string, number[]>();
+          alliancePieces.set(job.id, pieces);
           for (const [key, d] of done) {
             if (signal.aborted) break;
-            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say));
+            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say, ids => pieces.set(key, ids)));
           }
         } catch (e) { say(`launch pass skipped: ${(e as Error).message}`); }
       }
