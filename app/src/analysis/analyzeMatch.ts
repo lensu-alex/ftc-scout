@@ -125,8 +125,9 @@ export async function analyzeMatch(
         }
       }
       // the first half second after the hive is found teaches the watcher the yellow that is always there
+      const robotBoxes = robotTracker.tracks.filter(tr => tr.confirmed && t - tr.lastSeen <= 0.6).map(tr => tr.box);
       if (hs && t - hs.lastTry < 0.5) { for (const h of ["red", "blue"] as const) hs.watch[h].learnStill(frame); }
-      else      if (hs) for (const h of ["red", "blue"] as const) { if (elapsed < -0.5) hs.watch[h].learnStill(frame); else hs.samples[h].push(hs.watch[h].push(elapsed, frame)); }
+      else      if (hs) for (const h of ["red", "blue"] as const) { if (elapsed < -0.5) hs.watch[h].learnStill(frame); else hs.samples[h].push(hs.watch[h].push(elapsed, frame, robotBoxes)); }
     }
     if (o.infer && bar && elapsed >= 0 && elapsed <= MATCH_S) {
       const live = robotTracker.tracks.filter(tr => tr.confirmed && t - tr.lastSeen <= 0.6).map(tr => ({ id: tr.id, box: tr.box }));

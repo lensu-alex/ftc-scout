@@ -506,3 +506,14 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
 - `FTC_YT_BROWSER=safari` fails from a terminal: macOS denies reading Safari's cookie file ("Operation not permitted")
   unless the terminal app has Full Disk Access; no other browser is installed. Live retest waits for YouTube's limit
   to clear (or for the user to run the helper from a Terminal with Full Disk Access).
+
+**2026-11-24: robustness pass across cameras**
+- Launch pass falls back to 720p bursts when a stream has no 1080p (Q1 at 720p: 27/35 volleys clear vs 29/35 at 1080p).
+- Whole two-pass pipeline run on the other local clips: Netherlands (1 volley, right), scrimmage Q1/Q10 (10 and 22
+  volleys, plausible). The hive watcher now ignores yellow inside tracked robot boxes.
+- Known limitation, top-down cameras (Michigan): the hive sits over the robots' paths, the hive rotates during the
+  match and the BIOBUZZ sign ends up inside the box; robots carrying balls pass under it. The counter reports
+  ~20-30 volleys where 1-2 pollen were scored. Tried: stricter pollen colour (loses real balls in side views),
+  olive-sign exclusion with/without size+shape (same), 6 s persistence / sticky scenery with hysteresis (no gain on
+  top-down, −10% balls on side views), longer plateau hold (loses real volleys). Kept only the robot-box exclusion.
+  A top-down-specific counter (count discs inside the cell outlines, robots excluded) is the right fix later.

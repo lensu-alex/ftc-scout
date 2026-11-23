@@ -39,18 +39,25 @@ export class HiveWatcher {
     this.stillN++;
   }
 
-  /** Yellow inside the hive box: total area and the number of bumps along the row (balls side by side). */
-  push(t: number, f: Frame): HiveSample {
+  /**
+   * Yellow inside the hive box: total area and the number of bumps along the row (balls side by side).
+   * `robots` = boxes of the robots on screen now: balls a robot carries are not pollen in the hive
+   * (seen from above, robots drive right through the hive box).
+   */
+  push(t: number, f: Frame, robots: Box[] = []): HiveSample {
     const x0 = Math.max(0, Math.floor(this.box.x)), y0 = Math.max(0, Math.floor(this.box.y));
     const x1 = Math.min(f.width, Math.ceil(this.box.x + this.box.w)), y1 = Math.min(f.height, Math.ceil(this.box.y + this.box.h));
     const w = Math.max(0, x1 - x0);
     const col = new Float32Array(w);
     const still = this.still && this.stillN >= 3 ? this.still : null, half = this.stillN / 2;
+    const rb = robots.map(b => { const m = 0.15 * Math.max(b.w, b.h); return { x0: b.x - m, y0: b.y - m, x1: b.x + b.w + m, y1: b.y + b.h + m }; })
+      .filter(b => b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1);
     let area = 0;
     for (let y = y0; y < y1; y++) {
       let p = (y * f.width + x0) * 4;
       for (let x = 0; x < w; x++, p += 4) {
         if (still && still[(y - y0) * w + x] > half) continue;
+        if (rb.length) { let inR = false; for (const b of rb) if (x + x0 >= b.x0 && x + x0 < b.x1 && y >= b.y0 && y < b.y1) { inR = true; break; } if (inR) continue; }
         if (isPollen(f.data[p], f.data[p + 1], f.data[p + 2])) { area++; col[x]++; }
       }
     }
