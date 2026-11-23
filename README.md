@@ -46,7 +46,8 @@ https://ftc-events.firstinspires.org/services/API, then create `~/.ftc-scout/con
 | Robot tracking + identification (which robot is the team) | ✅ ≈0 identity switches; team followed 36–83% of a match on the hardest test stream |
 | "Which one is your team?" (only when unsure) | ✅ tap a picture once, every match is re-identified |
 | Team stats from video (distance, speed, time moving, heatmap, flags) | ✅ (helper mode) |
-| Launch counting / scored-ball estimate | 🔬 explored, needs trajectory model (see PLAN) |
+| Scored pollen per volley + hive tips (counted inside the hive cell) | 🔬 feasible on Oregon Q1: every marked volley = one step; per-ball count ±1 after calibration (see PLAN 2026-11-23) |
+| Launch counting at the robot | ❌ dead end at 720p (balls 3-8 px, blurred) |
 | Field mapping, heatmaps in field coordinates | ⏳ next |
 | Database | ⏳ later |
 
@@ -72,6 +73,8 @@ Overlay scores are never read or used.
 | `e2e-browser.ts <team>` | the page in Chromium, start to results (`SAFARI=1` = no Region Capture) |
 | `eval-track.ts <clip> <start>` | tracking: tracks per match, coverage, identity jumps, path picture |
 | `_detcount.ts`, `_detviz.ts`, `_flight.ts`, `_shot.ts`, `_confirm.ts` | scratch checks: robots per frame, boxes on a frame, ball flights, page screenshots, the confirmation flow |
+
+Launch-counting experiments (`tools/`, 30 fps native): `flights.py` (balls in flight from robots), `hive_activity.py`, `cell_count.py`, `rim_cross.py`, `row_count.py <clip> <start> <out> x0,y0,x1,y1` (balls resting in a hive cell).
 
 Model work (`tools/`): `prelabel.py [student.pt]` (auto-labels, v3 = motion-checked; `PRELABEL_ONLY`, `PRELABEL_ROOT`),
 `train.py <name> <base.pt> <imgsz> [epochs]` and `bench.py <names…>` (`FTC_DATA` = dataset folder).

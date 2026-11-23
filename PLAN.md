@@ -382,3 +382,29 @@ FTC Events API (free) · YouTube Data API v3 (free key, Google Cloud) · Supabas
   1. The user marks launches on slowed clips proposed by the loose detector (yes/no, or 1-4 balls).
   2. Count balls scored per alliance from the hive cells, which are clearly visible top-down. Split them by robot using which robot was at its shooting spot.
   3. Train a ball-in-flight detector on the labels from option 1.
+
+**2026-11-23: launch counting, a way that works: count at the hive, not at the robot**
+Ground truth: the user's 56 hand-marked launches of 12808 in Oregon Q1 (15 volleys of 2-4). Experiments in
+`tools/flights.py`, `hive_activity.py`, `cell_count.py`, `rim_cross.py`, `row_count.py` (30 fps, native 1280x720).
+- At the robot a ball is 3-8 px, blurred, and the robot's own carried balls move with it: the yellow robot 14687
+  produced ~10 false "flights" per volley. Tracking balls in flight from the robot stays unreliable. Dead end.
+- **Inside the hive cell the balls are 12-15 px, bright yellow, at a fixed place, and come to rest in a row.**
+  A volley of 4 arrives as 4 separate balls ~0.1 s apart (frame sheet `tools/debug/burst/hive_blobs_44.png`).
+- Yellow area inside the up-facing cell is a clean staircase over the match: a step up within 0.2-0.8 s of every
+  one of the 15 marked volleys (and 4 more steps = the partner's volleys), flat in between, and a drop to zero
+  each time the hive tips (8 tips in Q1, each = 20 pts, read for free).
+- Per-ball count in the row: 1-D bumps along the row give 3 for 4 balls and 5 for 7 (touching balls merge, the
+  row is seen at an angle); yellow run length / 13 px gives ~0.7 x the true count. Needs a calibration fit per
+  view (ball width from the first single-ball steps), then expect ±1 per volley.
+- Complication: the hive has 2 states (which cell faces up). In one state a white AprilTag panel sits in front
+  of the resting row and hides the lower half of the balls; their tops still show as bumps above the panel.
+- The red hive's upper cell window showed no pollen all match: the red alliance scored few; a check on a
+  stream where red scores is still needed (the state/panel geometry may differ per side).
+- What this gives: **scored pollen per volley per alliance** (hard number) + **tip events**. Launched ≈ scored +
+  misses: misses are balls that reach the hive region and leave (countable at the hive, untested) or never
+  arrive (not countable). So the app should report *scored* as the reliable stat and *launched* as a range.
+- Still open, in order: (1) attribute each volley to one of the 2 alliance robots: the approach direction of the
+  first ball in the window (from straight below = the robot under the hive; from the side = a far robot) plus
+  which robot was in a shooting pose 0.3-1 s before; (2) find the hive cell window automatically per camera view
+  (red/blue tube outlines above the field centre; one tap as fallback); (3) the hive-state (panel) switch;
+  (4) validate on a second stream and a top-down camera (Michigan) where the cell is seen from above.
