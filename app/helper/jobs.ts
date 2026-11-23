@@ -10,6 +10,9 @@ import { readFrames } from "./ffmpeg";
 import { LaunchEvidence, type RobotBoxAt } from "../src/vision/launchEvidence";
 import { attributeVolleys, type Attribution } from "../src/analysis/attribution";
 import { groupAlliances, robotGroups } from "../src/analysis/run";
+import { ShotLooks, referenceLooks, callVolleys, type TeamCall } from "../src/analysis/whoShot";
+import { splitAlliance } from "../src/analysis/pieces";
+import type { Frame } from "../src/vision/frame";
 import type { MatchAnalysis } from "../src/analysis/analyzeMatch";
 import { TinyOverlayReader } from "../src/vision/tinyOcr";
 import type { Frame } from "../src/vision/frame";
@@ -65,13 +68,22 @@ export function createJob(videoId: string, matches: TeamMatch[]): Job {
 const attributions = new Map<string, Map<string, Attribution[] | null>>();
 const allianceOf = (job: Job, key: string): "Red" | "Blue" => job.matches.find(m => m.key === key)?.alliance ?? "Blue";   // job id → match key → volleys attributed
 const alliancePieces = new Map<string, Map<string, number[]>>();            // job id → match key → track ids on the team's alliance
-const scoringFor = (job: Job, key: string, alliance: "Red" | "Blue") => ({ alliance, attribution: attributions.get(job.id)?.get(key) ?? null, alliancePieces: alliancePieces.get(job.id)?.get(key) });
+const shotLooks = new Map<string, Map<string, ShotLooks>>();                  // job id → match key → the shooter's look in each volley's burst
+function scoringFor(job: Job, key: string, alliance: "Red" | "Blue", a?: MatchAnalysis, identity?: { trackId: number | null; trackIds?: number[] }) {
+  const attribution = attributions.get(job.id)?.get(key) ?? null, pieces = alliancePieces.get(job.id)?.get(key), looks = shotLooks.get(job.id)?.get(key);
+  let calls: TeamCall[] | null = null;
+  if (a && attribution && pieces && looks && identity) {
+    const seed = identity.trackIds ?? (identity.trackId != null ? [identity.trackId] : []);
+    if (seed.length) calls = callVolleys(attribution, referenceLooks(a.robots, seed, pieces), i => looks.look(i), splitAlliance(a, pieces, seed), seed);
+  }
+  return { alliance, attribution, alliancePieces: pieces, calls };
+}
 
 /**
  * Pass 2: who shot each volley. For every volley the hive saw, a short 1080p burst (the 1.6 s before the
  * balls arrived) is read from the stream and the launch evidence above each robot is measured.
  */
-async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void, onPieces: (ids: number[]) => void): Promise<Attribution[] | null> {
+async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void, onPieces: (ids: number[]) => void, onLooks: (sl: ShotLooks) => void): Promise<Attribution[] | null> {
   const volleys = a.hiveEvents.filter(e => e.kind === "scored");
   if (!volleys.length) return [];
   const SC = 1920 / 1280;
@@ -86,15 +98,18 @@ async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: M
     return [{ id: r.id, box: { x: best.x * SC - s / 2, y: best.y * SC - 0.9 * s, w: s, h: 0.9 * s } }];
   });
   let got = 0;
+  const kept: { frame: Frame; robots: RobotBoxAt[] }[][] = [];
   for (const e of volleys) {
     if (signal.aborted) return null;
-    let robots: RobotBoxAt[] = [], n = 0;
+    let robots: RobotBoxAt[] = [], n = 0; const keep: (typeof kept)[number] = [];
     try {
       for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: 1920, h: 1080 })) {
-        robots = robotsAt(t - start); ev.push(t - start, frame, robots); n++;
+        robots = robotsAt(t - start); ev.push(t - start, frame, robots);
+        if (n % 16 === 8) keep.push({ frame, robots });
+        n++;
       }
     } catch { /* a burst that fails is just unsure */ }
-    ev.flush(robots);
+    ev.flush(robots); kept.push(keep);
     if (n >= 20) got++;
   }
   if (!got) { say(`${m.description}: no 1080p video for the launch pass`); return null; }
@@ -102,6 +117,15 @@ async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: M
   const trackAlliance = new Map<number, "red" | "blue" | null>();
   for (const g of groups) for (const id of g.ids) trackAlliance.set(id, ga.get(g.rep) ?? null);
   const att = attributeVolleys(a.hiveEvents, ev.samples, ev.launches, id => trackAlliance.get(id) ?? null);
+  // how the shooter looked at the moment of each shot (for team vs partner, independent of track swaps)
+  if (embedderAvailable()) {
+    const sl = new ShotLooks(nodeEmbed);
+    for (let k = 0; k < att.length; k++) {
+      const x = att[k]; if (x.robot === null) continue;
+      for (const fr of kept[k] ?? []) { const rb = fr.robots.find(r => r.id === x.robot); if (rb) await sl.add(k, fr.frame, rb.box); }
+    }
+    onLooks(sl);
+  }
   // the pieces on the team's alliance (by start side, markings, or the hive their launches fed)
   const mine = m.alliance.toLowerCase() as "red" | "blue";
   const inferred = att.flatMap(x => (x.robot !== null && x.hive === mine ? [x.robot] : []));
@@ -124,7 +148,7 @@ async function run(job: Job, signal: AbortSignal) {
       embedInfer: detectorAvailable() && embedderAvailable() ? nodeEmbed : undefined,
     };
     const done = await runStream(src, job.matches, async (key, st) => {
-      job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key))) } : st;
+      job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key), st.analysis, st.identity)) } : st;
     }, say, signal, makeReader, (_s, from, to) => src.frames(from, to - from, 10) /* 10 fps: launches; robots are still detected at ~3 fps */, matchesOf, opts);
     // matches whose video couldn't be read (expired or throttled link): once more, with a fresh link
     const failed = job.matches.filter(m => job.status[m.key]?.state === "error" && (job.status[m.key] as { message: string }).message === NO_VIDEO);
@@ -133,7 +157,7 @@ async function run(job: Job, signal: AbortSignal) {
       const s2 = await resolveStream(job.videoId, true);
       const src2 = new NodeSource(s2.url, s2.duration);
       const again = await runStream(src2, failed, async (key, st) => {
-        job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key))) } : st;
+        job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key), st.analysis, st.identity)) } : st;
       }, say, signal, makeReader, (_s, from, to) => src2.frames(from, to - from, 10), matchesOf, opts);
       for (const [k, v] of again ?? []) done?.set(k, v);
       if (done && again?.size) await refresh(job, done, answers.get(job.id) ?? new Map());
@@ -150,7 +174,8 @@ async function run(job: Job, signal: AbortSignal) {
           alliancePieces.set(job.id, pieces);
           for (const [key, d] of done) {
             if (signal.aborted) break;
-            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say, ids => pieces.set(key, ids)));
+            const lk = shotLooks.get(job.id) ?? new Map<string, ShotLooks>(); shotLooks.set(job.id, lk);
+            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say, ids => pieces.set(key, ids), sl => lk.set(key, sl)));
           }
         } catch (e) { say(`launch pass skipped: ${(e as Error).message}`); }
       }
@@ -198,7 +223,7 @@ async function refresh(job: Job, done: Analysed, known: Map<string, number>, mor
   const picks = identifyTeam(done, known, more);
   for (const pick of picks) {
     const d = done.get(pick.matchKey)!;
-    job.status[pick.matchKey] = { state: "done", start: d.start, report: await toReport(d.analysis, thumb, pick, known.has(pick.matchKey), scoringFor(job, pick.matchKey, d.m.alliance)) };
+    job.status[pick.matchKey] = { state: "done", start: d.start, report: await toReport(d.analysis, thumb, pick, known.has(pick.matchKey), scoringFor(job, pick.matchKey, d.m.alliance, d.analysis, pick)) };
   }
   return picks;
 }

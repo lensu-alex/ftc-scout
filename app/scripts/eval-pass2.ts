@@ -11,6 +11,7 @@ import { groupAlliances, robotGroups } from "../src/analysis/run";
 import { LaunchEvidence, type RobotBoxAt } from "../src/vision/launchEvidence";
 import { attributeVolleys, perRobot } from "../src/analysis/attribution";
 import { splitAlliance } from "../src/analysis/pieces";
+import { ShotLooks, referenceLooks, callVolleys } from "../src/analysis/whoShot";
 const [clip720, s720, clip1080, s1080, blueS, redS] = process.argv.slice(2);
 const start720 = +s720, start1080 = +s1080;
 const box = (s: string) => { const [x0, y0, x1, y1] = s.split(",").map(Number); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
@@ -51,15 +52,18 @@ const found = a.hives.find(h => h.view === a.mainView)?.boxes;
 const ev = new LaunchEvidence([scale(found?.blue ?? hives.blue), scale(found?.red ?? hives.red)].map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h * 0.6 })));   // where balls arrive
 const t1 = Date.now();
 let bursts = 0;
+const kept: { t: number; frame: typeof a.views[number]["thumb"] & {}; robots: RobotBoxAt[] }[][] = [];   // 3 frames per burst for the looks
 for (const e of events) {
   if (e.kind !== "scored") continue;
   const from = e.t - 1.8;
-  let robots: RobotBoxAt[] = [];
+  let robots: RobotBoxAt[] = [], i = 0; const keep: (typeof kept)[number] = [];
   for await (const { t, frame } of readFrames(clip1080, 30, start1080 + from, 1.6, { w: 1920, h: 1080 })) {
     robots = robotsAt(t - start1080);
     ev.push(t - start1080, frame, robots);
+    if (i % 16 === 8) keep.push({ t: t - start1080, frame, robots });
+    i++;
   }
-  ev.flush(robots); bursts++;
+  ev.flush(robots); bursts++; kept.push(keep);
 }
 console.log(`pass 2: ${bursts} bursts, ${ev.samples.length} frames, ${ev.launches.length} tracked launches in ${((Date.now() - t1) / 1000).toFixed(0)} s`);
 const att = attributeVolleys(events, ev.samples, ev.launches, alliance);
@@ -75,4 +79,21 @@ if (process.env.SEED) {
   const balls = (ids: number[]) => att.filter(x => x.hive === mine && x.robot !== null && ids.includes(x.robot)).reduce((acc, x) => { if (x.confidence >= 0.6 && !sp.unsure.includes(x.robot!)) acc.sure += x.balls; else acc.unsure += x.balls; return acc; }, { sure: 0, unsure: 0 });
   console.log(`split (${mine}): team pieces ${JSON.stringify(sp.team)} partner ${JSON.stringify(sp.partner)} unsure ${JSON.stringify(sp.unsure)}`);
   console.log(`team balls ${JSON.stringify(balls(sp.team))}  partner ${JSON.stringify(balls(sp.partner))}  alliance total ${att.filter(x => x.hive === mine).reduce((n, x) => n + x.balls, 0)}`);
+  // looks at the moment of the shot
+  const looks = referenceLooks(a.robots, [seed], alliancePieces);
+  const sl = new ShotLooks(nodeEmbed);
+  const scoredIdx = events.map((e, i) => (e.kind === "scored" ? i : -1)).filter(i => i >= 0);
+  for (let k = 0; k < att.length; k++) {
+    const x = att[k]; if (x.robot === null) continue;
+    for (const fr of kept[k] ?? []) { const rb = fr.robots.find(r => r.id === x.robot); if (rb) await sl.add(k, fr.frame, rb.box); }
+  }
+  const calls = callVolleys(att, looks, i => sl.look(i), sp, [seed]);
+  const tally = { team: { sure: 0, unsure: 0 }, partner: { sure: 0, unsure: 0 }, none: 0 };
+  for (let k = 0; k < att.length; k++) {
+    const x = att[k], c = calls[k]; if (x.hive !== mine) continue;
+    if (!c.who) { tally.none += x.balls; continue; }
+    if (c.margin >= 0.5 && x.confidence >= 0.6) tally[c.who].sure += x.balls; else tally[c.who].unsure += x.balls;
+  }
+  console.log(`by looks+chain: team ${JSON.stringify(tally.team)} partner ${JSON.stringify(tally.partner)} unassigned ${tally.none}`);
+  console.log("per volley: " + att.map((x, k) => x.hive === mine ? `${x.t.toFixed(0)}:${x.robot}→${calls[k].who?.[0] ?? "?"}${calls[k].byLook !== null ? `(${calls[k].byLook!.toFixed(2)})` : ""}` : "").filter(Boolean).join(" "));
 }

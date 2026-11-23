@@ -3,6 +3,7 @@ import type { Pick } from "./identify";
 import { launchEstimate, robotStats, type LaunchEstimate, type RobotStats } from "./robotStats";
 import type { Attribution } from "./attribution";
 import { splitAlliance } from "./pieces";
+import type { TeamCall } from "./whoShot";
 
 /** Pollen read at the hive: per alliance, and per robot when the 1080p pass could tell who shot. */
 export interface Scoring {
@@ -40,7 +41,7 @@ export interface MatchReport {
 }
 
 /** Scoring summary from the hive events and (optionally) the per-volley attribution. */
-export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSeed: number[], attribution: Attribution[] | null, alliancePieces?: number[]): Scoring {
+export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSeed: number[], attribution: Attribution[] | null, alliancePieces?: number[], calls?: TeamCall[] | null): Scoring {
   // every piece of the alliance belongs to the team or the partner
   const split = alliancePieces ? splitAlliance(a, alliancePieces, teamSeed) : { team: teamSeed, partner: [] as number[], unsure: [] as number[] };
   const teamTracks = split.team;
@@ -57,14 +58,25 @@ export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSe
     const sureV = (v: (typeof volleys)[number]) => v.confidence >= 0.6 && !split.unsure.includes(v.robot!);
     return { sure: vs.filter(sureV).reduce((n, v) => n + v.balls, 0), unsure: vs.filter(v => !sureV(v)).reduce((n, v) => n + v.balls, 0), volleys: vs.length };
   };
-  const team = attribution && teamTracks.length ? sum(v => teamTracks.includes(v.robot!)) : null;
-  const partner = attribution && teamTracks.length ? sum(v => split.partner.includes(v.robot!)) : null;
+  let team = attribution && teamTracks.length ? sum(v => teamTracks.includes(v.robot!)) : null;
+  let partner = attribution && teamTracks.length ? sum(v => split.partner.includes(v.robot!)) : null;
+  // when the shot-moment calls exist (looks + chain), they decide instead of the chain alone
+  if (calls && attribution) {
+    const t = { sure: 0, unsure: 0, volleys: 0 }, p = { sure: 0, unsure: 0, volleys: 0 };
+    attribution.forEach((x, i) => {
+      if (x.hive !== mine || x.robot === null) return;
+      const c = calls[i]; if (!c?.who) return;
+      const bucket = c.who === "team" ? t : p; bucket.volleys++;
+      if (c.margin >= 0.5 && x.confidence >= 0.6) bucket.sure += x.balls; else bucket.unsure += x.balls;
+    });
+    team = t; partner = p;
+  }
   return { hive, volleys, team, partner, attributed: !!attribution };
 }
 
 export async function toReport(
   a: MatchAnalysis, encodeThumb: (f: NonNullable<MatchAnalysis["views"][number]["thumb"]>) => Promise<string>,
-  identity?: Pick, confirmed = false, scoring?: { alliance: "Red" | "Blue"; attribution: Attribution[] | null; alliancePieces?: number[] },
+  identity?: Pick, confirmed = false, scoring?: { alliance: "Red" | "Blue"; attribution: Attribution[] | null; alliancePieces?: number[]; calls?: TeamCall[] | null },
 ): Promise<MatchReport> {
   // the team's robot = all its track pieces, joined in time order
   const ids = identity?.trackIds ?? (identity?.trackId != null ? [identity.trackId] : []);
@@ -88,7 +100,7 @@ export async function toReport(
       return { trackId: id, thumbUrl: c && c.width > 0 ? await encodeThumb(c) : null, picked: id === identity.trackId || (identity.trackIds ?? []).includes(id) };
     })) : undefined,
     confirmed,
-    scoring: scoring ? scoringOf(a, scoring.alliance, ids, scoring.attribution, scoring.alliancePieces) : undefined,
+    scoring: scoring ? scoringOf(a, scoring.alliance, ids, scoring.attribution, scoring.alliancePieces, scoring.calls) : undefined,
     robotsTracked: a.robots.length,
     team: robot && identity ? {
       confidence: identity.confidence, needsConfirmation: identity.needsConfirmation,

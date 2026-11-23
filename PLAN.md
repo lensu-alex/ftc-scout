@@ -493,3 +493,8 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   (the tracker swaps and duplicates pieces when both alliance robots sit under the hive). This is now the main lever:
   read the team-number plates from the 1080p bursts (readable by eye: 11703, 12808) to pin every piece to a team,
   which also replaces the "which one is your team" tap. Then the team's count collapses to one number.
+- Team vs partner decided at the moment of the shot (`analysis/whoShot.ts`): the shooter's crop in the 1080p burst
+  is embedded and compared with the nearest identified-team piece vs the nearest partner piece; the chain decides
+  only when looks are close. Offline: Q5 team 22 sure, partner 13, of 35, nothing unsure; Q1 team 22 sure + 13
+  unsure, partner 2 + 4 (two dark, similar robots side by side: looks are weak there). Plate reading stays an
+  optional extra cue (user: don't rely on it). Wired into the helper (`scoringFor` → `callVolleys`).
