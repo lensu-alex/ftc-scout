@@ -517,3 +517,6 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   olive-sign exclusion with/without size+shape (same), 6 s persistence / sticky scenery with hysteresis (no gain on
   top-down, −10% balls on side views), longer plateau hold (loses real volleys). Kept only the robot-box exclusion.
   A top-down-specific counter (count discs inside the cell outlines, robots excluded) is the right fix later.
+- Live retest still blocked (2026-11-24): `--print duration` works again but resolving media links still hits the
+  "not a bot" check, also with `--js-runtimes node` (yt-dlp 2026.10.26 wants a JS runtime; Node is accepted, no
+  deno needed). The block is on the player API for this IP; it should clear with time.
