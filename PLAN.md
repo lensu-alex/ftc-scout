@@ -423,3 +423,24 @@ Ground truth: the user's 56 hand-marked launches of 12808 in Oregon Q1 (15 volle
   box too (peak 2000+ px). The watcher now ignores yellow present before the match (`learnStill`).
   Next: panel-state detection (white strip with tags in the box → use half the ball area), hive box per view
   (tap), and attribution: which alliance robot shot each volley.
+
+**2026-11-23 (evening): one team, not the alliance — attribution of each volley to a robot**
+Ground truth again Q1 (12808's 15 marked volleys = TEAM, the other 9 hive events = partner or unmarked).
+Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39-116 s), then 10; 11703 = 9 (and 1 after the swap).
+- Ball path from robot to hive (`backtrack.py`, 30 fps native, difference-based): **not visible**. Between the
+  robot and the cell the ball is a faint streak 4 diameters long over the grey floor; it only shows up at the cell.
+  Dead end on 720p30, like launch counting at the robot.
+- Entry direction into the cell (`attribute.py`): the few points inside the cell are bouncing balls; unusable.
+- Robot stillness + change inside the box (`stillshoot.py`): shooters are often still, but 12808 also shot while
+  moving (speeds up to 1.6 sizes/s at marked volleys). Weak.
+- Yellow smear above the robot (`attribute2.py`) and small motion above a robot relative to its usual
+  (`attribute3.py`), in the 1.5 s before each arrival: the best cue. Among the blue robots it picks 12808 at
+  ~11 of 15 marked volleys (2 of the misses are volleys where 12808's track had a gap), and the partner at the
+  unmarked ones in most cases. The clearest case (60 s) shows the smear plainly in a single frame.
+  Fails when the ball goes up in front of the white hive, and when another robot or a person moves above the box.
+- Honest status: scored balls per *alliance* per volley are solid; per *robot* the automatic cue is ~75% right.
+- Proposed design (needs the user's OK): hive counter gives each volley; the smear/motion cue attributes it with a
+  margin; volleys with a clear margin are assigned, the rest are shown as one screenshot with the two alliance
+  robots boxed at the launch moment ("who shot this?"), one tap each; those taps become training labels for a
+  small "shooting now?" classifier on robot crops, which should replace the taps after a few matches. Per-team
+  counts are shown as sure + unsure until resolved.
