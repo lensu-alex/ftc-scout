@@ -45,5 +45,11 @@ sec = {}
 for t, c in counts: sec.setdefault(int(t), []).append(c)
 med = [statistics.median(sec[k]) for k in sorted(sec)]
 print(" ".join(f"{k}:{int(v)}" for k, v in enumerate(med)))
-ups = sum(max(0, med[k] - med[k - 1]) for k in range(1, len(med)))
+# a count only "arrives" when it holds for 2 s (robots passing, flicker don't)
+stable = []; level = med[0]; ups = 0; k = 1
+while k < len(med):
+    if med[k] != level and k + 1 < len(med) and med[k + 1] == med[k]:
+        if med[k] > level: ups += med[k] - level
+        level = med[k]; k += 2
+    else: k += 1
 print(f"disc diameter {D:.1f}px; total steps up (balls arrived) {int(ups)}; max at once {int(max(med))}")
