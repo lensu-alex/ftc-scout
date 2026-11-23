@@ -550,3 +550,5 @@ references, 2-means of shot looks, longer plateau holds, colour/persistence rule
 Open: top-down cameras over-count alliance pollen (disc counter dev tool is right on Michigan; not integrated);
 the 15% of volleys where both alliance robots are active stay possible-for-both; YouTube's link resolving limit
 is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are still "not now" per the user).
+- Baseline (`check-all quick`, pass 2 on 720p): or1 36 volleys/6 tips, 29/36 clear; or5 40/6, 35/40; or9 44/7, 28/44;
+  or18 46/14, 42/46; q10 24/5, 21/24; m1 12/2, 11/12; nlron 21/9 (top-down, over-counts); micoq 31/9 (top-down, over-counts).
