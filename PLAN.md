@@ -503,3 +503,6 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   trained on plate crops; parked as an optional cue, as agreed, not relied on.
 - Live helper retest after the day's changes is blocked: YouTube asks this computer to sign in ("not a bot") after
   the many fetches today. Retry later; the offline two-pass eval on the local clips exercises the same code.
+- `FTC_YT_BROWSER=safari` fails from a terminal: macOS denies reading Safari's cookie file ("Operation not permitted")
+  unless the terminal app has Full Disk Access; no other browser is installed. Live retest waits for YouTube's limit
+  to clear (or for the user to run the helper from a Terminal with Full Disk Access).
