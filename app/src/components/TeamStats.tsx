@@ -81,6 +81,18 @@ export function TeamStats({ matches, status }: { matches: TeamMatch[]; status: R
   return (
     <section className="card">
       <h2>Team from the video</h2>
+      {(() => {
+        const withPollen = rows.filter(x => x.r.scoring?.attributed && x.r.scoring.team);
+        if (!withPollen.length) return null;
+        const sure = withPollen.reduce((n, x) => n + x.r.scoring!.team!.sure, 0), poss = withPollen.reduce((n, x) => n + x.r.scoring!.team!.unsure, 0);
+        const per = (v: number) => (v / withPollen.length).toFixed(1);
+        return (
+          <p className="pollen-summary">
+            <b>Pollen scored:</b> {sure}{poss ? `–${sure + poss}` : ""} in {withPollen.length} match{withPollen.length === 1 ? "" : "es"}
+            {" "}({per(sure)}{poss ? `–${per(sure + poss)}` : ""} per match). Counted at the hive; the range covers volleys that could be the partner's.
+          </p>
+        );
+      })()}
       <p className="muted small">
         Robot followed in {rows.length} of {done.length} analysed match(es).
         {good.length < rows.length && <> {rows.length - good.length} left out of the averages (followed for less than 40% of the match).</>}
