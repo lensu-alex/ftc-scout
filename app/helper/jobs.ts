@@ -6,6 +6,11 @@ import { join } from "node:path";
 import type { TeamMatch } from "../src/api/ftcscout";
 import { identifyTeam, NO_VIDEO, runStream, type Analysed, type MatchStatus } from "../src/analysis/run";
 import { toReport, type MatchReport } from "../src/analysis/report";
+import { readFrames } from "./ffmpeg";
+import { LaunchEvidence, type RobotBoxAt } from "../src/vision/launchEvidence";
+import { attributeVolleys, type Attribution } from "../src/analysis/attribution";
+import { groupAlliances, robotGroups } from "../src/analysis/run";
+import type { MatchAnalysis } from "../src/analysis/analyzeMatch";
 import { TinyOverlayReader } from "../src/vision/tinyOcr";
 import type { Frame } from "../src/vision/frame";
 import { NodeSource } from "./source";
@@ -57,6 +62,49 @@ export function createJob(videoId: string, matches: TeamMatch[]): Job {
   return job;
 }
 
+const attributions = new Map<string, Map<string, Attribution[] | null>>();
+const allianceOf = (job: Job, key: string): "Red" | "Blue" => job.matches.find(m => m.key === key)?.alliance ?? "Blue";   // job id → match key → volleys attributed
+const scoringFor = (job: Job, key: string, alliance: "Red" | "Blue") => ({ alliance, attribution: attributions.get(job.id)?.get(key) ?? null });
+
+/**
+ * Pass 2: who shot each volley. For every volley the hive saw, a short 1080p burst (the 1.6 s before the
+ * balls arrived) is read from the stream and the launch evidence above each robot is measured.
+ */
+async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void): Promise<Attribution[] | null> {
+  const volleys = a.hiveEvents.filter(e => e.kind === "scored");
+  if (!volleys.length) return [];
+  const SC = 1920 / 1280;
+  const hive = a.hives.find(h => h.view === a.mainView)?.boxes ?? a.hives[0]?.boxes;
+  const exclude = hive ? [hive.red, hive.blue].map(b => ({ x: b.x * SC, y: b.y * SC, w: b.w * SC, h: b.h * SC * 0.6 })) : [];
+  const ev = new LaunchEvidence(exclude);
+  const robotsAt = (t: number): RobotBoxAt[] => a.robots.flatMap(r => {
+    let best = r.path[0];
+    for (const p of r.path) if (Math.abs(p.t - (start + t)) < Math.abs(best.t - (start + t))) best = p;
+    if (Math.abs(best.t - (start + t)) > 0.6) return [];
+    const s = best.s * SC;
+    return [{ id: r.id, box: { x: best.x * SC - s / 2, y: best.y * SC - 0.9 * s, w: s, h: 0.9 * s } }];
+  });
+  let got = 0;
+  for (const e of volleys) {
+    if (signal.aborted) return null;
+    let robots: RobotBoxAt[] = [], n = 0;
+    try {
+      for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: 1920, h: 1080 })) {
+        robots = robotsAt(t - start); ev.push(t - start, frame, robots); n++;
+      }
+    } catch { /* a burst that fails is just unsure */ }
+    ev.flush(robots);
+    if (n >= 20) got++;
+  }
+  if (!got) { say(`${m.description}: no 1080p video for the launch pass`); return null; }
+  const groups = robotGroups(a, m.alliance), ga = groupAlliances(a, groups, m.alliance);
+  const trackAlliance = new Map<number, "red" | "blue" | null>();
+  for (const g of groups) for (const id of g.ids) trackAlliance.set(id, ga.get(g.rep) ?? null);
+  const att = attributeVolleys(a.hiveEvents, ev.samples, ev.launches, id => trackAlliance.get(id) ?? null);
+  say(`${m.description}: ${att.filter(x => x.confidence >= 0.6).length} of ${att.length} volleys attributed (${got} bursts)`);
+  return att;
+}
+
 async function run(job: Job, signal: AbortSignal) {
   if (signal.aborted) { job.state = "cancelled"; return; }
   job.state = "running";
@@ -71,7 +119,7 @@ async function run(job: Job, signal: AbortSignal) {
       embedInfer: detectorAvailable() && embedderAvailable() ? nodeEmbed : undefined,
     };
     const done = await runStream(src, job.matches, async (key, st) => {
-      job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity) } : st;
+      job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key))) } : st;
     }, say, signal, makeReader, (_s, from, to) => src.frames(from, to - from, 10) /* 10 fps: launches; robots are still detected at ~3 fps */, matchesOf, opts);
     // matches whose video couldn't be read (expired or throttled link): once more, with a fresh link
     const failed = job.matches.filter(m => job.status[m.key]?.state === "error" && (job.status[m.key] as { message: string }).message === NO_VIDEO);
@@ -80,13 +128,25 @@ async function run(job: Job, signal: AbortSignal) {
       const s2 = await resolveStream(job.videoId, true);
       const src2 = new NodeSource(s2.url, s2.duration);
       const again = await runStream(src2, failed, async (key, st) => {
-        job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity) } : st;
+        job.status[key] = st.state === "done" ? { state: "done", start: st.start, report: await toReport(st.analysis, thumb, st.identity, false, scoringFor(job, key, allianceOf(job, key))) } : st;
       }, say, signal, makeReader, (_s, from, to) => src2.frames(from, to - from, 10), matchesOf, opts);
       for (const [k, v] of again ?? []) done?.set(k, v);
       if (done && again?.size) await refresh(job, done, answers.get(job.id) ?? new Map());
     }
     if (done) {
       analysed.set(job.id, done);
+      // pass 2: who shot each volley, from 1080p bursts (most streams have 1080p; otherwise alliance totals only)
+      if (done.size && !signal.aborted) {
+        const per = attributions.get(job.id) ?? new Map<string, Attribution[] | null>();
+        attributions.set(job.id, per);
+        try {
+          const hd = await resolveStream(job.videoId, false, 1080);
+          for (const [key, d] of done) {
+            if (signal.aborted) break;
+            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say));
+          }
+        } catch (e) { say(`launch pass skipped: ${(e as Error).message}`); }
+      }
       await reapplyAnswers(job, done);
     }
     job.state = signal.aborted ? "cancelled" : "done";
@@ -131,7 +191,7 @@ async function refresh(job: Job, done: Analysed, known: Map<string, number>, mor
   const picks = identifyTeam(done, known, more);
   for (const pick of picks) {
     const d = done.get(pick.matchKey)!;
-    job.status[pick.matchKey] = { state: "done", start: d.start, report: await toReport(d.analysis, thumb, pick, known.has(pick.matchKey)) };
+    job.status[pick.matchKey] = { state: "done", start: d.start, report: await toReport(d.analysis, thumb, pick, known.has(pick.matchKey), scoringFor(job, pick.matchKey, d.m.alliance)) };
   }
   return picks;
 }

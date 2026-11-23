@@ -22,7 +22,9 @@ export function MatchResult({ match, report: a, youtube }: { match: TeamMatch; r
         <Fact label="Camera cuts" value={String(a.cuts)} />
         <Fact label="Clock checks OK" value={`${okClock}/${a.clockChecks.length}`} />
         {a.robotsTracked !== undefined && <Fact label="Robots tracked" value={String(a.robotsTracked)} />}
-        {a.team?.launchEstimate && <Fact label="Launches (rough)" value={`≈ ${a.team.launchEstimate.est} (${a.team.launchEstimate.low}–${a.team.launchEstimate.high})`} />}
+        {a.scoring && <Fact label={`${match.alliance} alliance pollen`} value={`${a.scoring.hive[match.alliance.toLowerCase() as "red" | "blue"].balls} in ${a.scoring.hive[match.alliance.toLowerCase() as "red" | "blue"].volleys} volleys, ${a.scoring.hive[match.alliance.toLowerCase() as "red" | "blue"].tips} tips`} />}
+        {a.scoring?.team && <Fact label="Team pollen scored" value={a.scoring.team.unsure ? `${a.scoring.team.sure}–${a.scoring.team.sure + a.scoring.team.unsure}` : String(a.scoring.team.sure)} />}
+        {a.scoring?.partner && <Fact label="Partner pollen scored" value={a.scoring.partner.unsure ? `${a.scoring.partner.sure}–${a.scoring.partner.sure + a.scoring.partner.unsure}` : String(a.scoring.partner.sure)} />}
         {a.team !== undefined && (
           <Fact label="Team robot" value={a.confirmed ? (a.team ? "your choice" : "left out by you") : !a.team ? "not found" : `app's guess (${pct(a.team.confidence)})`} />
         )}

@@ -478,3 +478,9 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   `helper/youtube.ts` resolves 1080p (format 137) on request, `scripts/eval-pass2.ts`): Q1 → 30 of 38 volleys with a
   clear shooter, pass 1 40 s + pass 2 47 s on the M5. Not yet wired into the helper jobs; alliance per track and the
   hive boxes are still given by hand.
+- Helper pass 2 live (`helper/jobs.ts attributeMatch`): job for 12808, 2 matches from YouTube: Q-14 16/20 volleys
+  attributed, Q-18 31/38, ~2.5 min total incl. 1080p bursts. Report gets `scoring` (alliance balls/volleys/tips,
+  per-volley robot + confidence, team/partner sure+unsure); page shows "Pollen scored" and "Alliance pollen".
+  Gap found: the team's count only uses the identified track pieces; the alliance's other pieces count as the
+  partner. Needed: assign every piece of the alliance to one of its two robots (time overlap = different robots,
+  then appearance + handover), so team vs partner is a full split.

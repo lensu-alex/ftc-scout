@@ -1,6 +1,19 @@
 import type { MatchAnalysis } from "./analyzeMatch";
 import type { Pick } from "./identify";
 import { launchEstimate, robotStats, type LaunchEstimate, type RobotStats } from "./robotStats";
+import type { Attribution } from "./attribution";
+
+/** Pollen read at the hive: per alliance, and per robot when the 1080p pass could tell who shot. */
+export interface Scoring {
+  hive: Record<"red" | "blue", { balls: number; volleys: number; tips: number }>;
+  /** every volley: when, which hive, how many balls, which robot track (null = couldn't tell), how sure */
+  volleys: { t: number; hive: "red" | "blue"; balls: number; robot: number | null; confidence: number }[];
+  /** the scouted team's robot: balls from volleys attributed to its tracks */
+  team: { sure: number; unsure: number; volleys: number } | null;
+  /** its alliance partner (the other robot of the team's alliance) */
+  partner: { sure: number; unsure: number; volleys: number } | null;
+  attributed: boolean;     // false when the 1080p pass didn't run (no 1080p stream / fetch failed)
+}
 
 // Plain-JSON form of a match analysis: what the background helper sends to the page.
 export interface MatchReport {
@@ -22,11 +35,30 @@ export interface MatchReport {
   /** When unsure: pictures of the robots it could be, so the user can point at the right one. */
   candidates?: { trackId: number; thumbUrl: string | null; picked: boolean }[];
   confirmed?: boolean;
+  scoring?: Scoring;
+}
+
+/** Scoring summary from the hive events and (optionally) the per-volley attribution. */
+export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamTracks: number[], attribution: Attribution[] | null): Scoring {
+  const hive = { red: { balls: 0, volleys: 0, tips: 0 }, blue: { balls: 0, volleys: 0, tips: 0 } };
+  for (const e of a.hiveEvents) { if (e.kind === "tip") hive[e.hive].tips++; else { hive[e.hive].volleys++; hive[e.hive].balls += e.balls ?? 0; } }
+  const volleys = a.hiveEvents.filter(e => e.kind === "scored").map(e => {
+    const at = attribution?.find(x => x.hive === e.hive && Math.abs(x.t - e.t) < 0.05);
+    return { t: +e.t.toFixed(2), hive: e.hive, balls: e.balls ?? 0, robot: at?.robot ?? null, confidence: at ? +at.confidence.toFixed(2) : 0 };
+  });
+  const mine = teamAlliance.toLowerCase() as "red" | "blue";
+  const sum = (pick: (v: (typeof volleys)[number]) => boolean) => {
+    const vs = volleys.filter(v => v.hive === mine && v.robot !== null && pick(v));
+    return { sure: vs.filter(v => v.confidence >= 0.6).reduce((n, v) => n + v.balls, 0), unsure: vs.filter(v => v.confidence < 0.6).reduce((n, v) => n + v.balls, 0), volleys: vs.length };
+  };
+  const team = attribution && teamTracks.length ? sum(v => teamTracks.includes(v.robot!)) : null;
+  const partner = attribution && teamTracks.length ? sum(v => !teamTracks.includes(v.robot!)) : null;
+  return { hive, volleys, team, partner, attributed: !!attribution };
 }
 
 export async function toReport(
   a: MatchAnalysis, encodeThumb: (f: NonNullable<MatchAnalysis["views"][number]["thumb"]>) => Promise<string>,
-  identity?: Pick, confirmed = false,
+  identity?: Pick, confirmed = false, scoring?: { alliance: "Red" | "Blue"; attribution: Attribution[] | null },
 ): Promise<MatchReport> {
   // the team's robot = all its track pieces, joined in time order
   const ids = identity?.trackIds ?? (identity?.trackId != null ? [identity.trackId] : []);
@@ -50,6 +82,7 @@ export async function toReport(
       return { trackId: id, thumbUrl: c && c.width > 0 ? await encodeThumb(c) : null, picked: id === identity.trackId || (identity.trackIds ?? []).includes(id) };
     })) : undefined,
     confirmed,
+    scoring: scoring ? scoringOf(a, scoring.alliance, ids, scoring.attribution) : undefined,
     robotsTracked: a.robots.length,
     team: robot && identity ? {
       confidence: identity.confidence, needsConfirmation: identity.needsConfirmation,

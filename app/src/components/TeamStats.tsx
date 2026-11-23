@@ -12,6 +12,15 @@ import { drawAuto, FieldCorners, FieldHeatmap, Legend, savedCorners } from "./Fi
 
 interface Row { m: TeamMatch; r: MatchReport; s: RobotStats; sure: boolean; field: PathPoint[] | null }
 
+/** The team's pollen scored: sure count, plus the unsure volleys as a range. */
+export function scoredCell(r: MatchReport) {
+  const sc = r.scoring;
+  if (!sc) return <span className="muted">—</span>;
+  if (!sc.attributed || !sc.team) return <span className="muted" title="the 1080p launch pass didn't run for this match">alliance only</span>;
+  const t = sc.team;
+  return t.unsure ? <span title={`${t.sure} from clear volleys, ${t.unsure} more from volleys that could be the partner's`}>{t.sure}–{t.sure + t.unsure}</span> : <span>{t.sure}</span>;
+}
+
 export function TeamStats({ matches, status }: { matches: TeamMatch[]; status: Record<string, HelperMatchStatus> }) {
   const done = matches.filter(m => status[m.key]?.state === "done");
   const events = [...new Set(done.map(m => m.eventCode))];
@@ -113,7 +122,7 @@ export function TeamStats({ matches, status }: { matches: TeamMatch[]; status: R
       </div>
 
       <table className="matches">
-        <thead><tr><th>Match</th><th>Alliance</th><th>Auto: left start</th><th>Usual auto</th><th>Launches (rough)</th><th>End</th><th>Possible disconnect</th><th>Followed</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Match</th><th>Alliance</th><th>Auto: left start</th><th>Usual auto</th><th>Pollen scored</th><th>Alliance pollen</th><th>End</th><th>Possible disconnect</th><th>Followed</th><th>Notes</th></tr></thead>
         <tbody>
           {rows.map(x => {
             const st = stopsOf(x);
@@ -123,7 +132,8 @@ export function TeamStats({ matches, status }: { matches: TeamMatch[]; status: R
                 <td><span className={`pill ${x.m.alliance.toLowerCase()}`}>{x.m.alliance}</span></td>
                 <td>{leave(x) === null ? <span className="muted">not seen</span> : leave(x) ? "yes" : <span className="flag">⚑ no</span>}</td>
                 <td>{sameAuto(x) === null ? <span className="muted">—</span> : sameAuto(x) ? "yes" : <span className="flag">⚑ different</span>}</td>
-                <td>{x.r.team?.launchEstimate ? `≈ ${x.r.team.launchEstimate.est} (${x.r.team.launchEstimate.low}–${x.r.team.launchEstimate.high})` : "—"}</td>
+                <td>{scoredCell(x.r)}</td>
+                <td>{x.r.scoring ? `${x.r.scoring.hive[x.m.alliance.toLowerCase() as "red" | "blue"].balls} (${x.r.scoring.hive[x.m.alliance.toLowerCase() as "red" | "blue"].tips} tips)` : "—"}</td>
                 <td>{end(x) === null ? <span className="muted">not seen</span> : end(x)!.parked ? "parked" : "moving"}</td>
                 <td>{x.s.trackedPct < 0.4 ? <span className="muted">can't tell</span>
                   : dead(x) ? <span className="flag">⚑ didn't move</span>
