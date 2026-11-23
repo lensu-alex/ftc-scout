@@ -140,7 +140,31 @@ export function identifyTeam(done: Analysed, known: Map<string, number> = new Ma
   return [...picks, ...skipped];
 }
 
-interface RobotGroup { rep: number; ids: number[]; embedding: Float32Array; hits: number; colour: number }
+export interface RobotGroup { rep: number; ids: number[]; embedding: Float32Array; hits: number; colour: number }
+
+/**
+ * Which alliance is each robot (group of track pieces) on? Robots start the match on their own side of
+ * the field: the side of the hive whose colour matches. A group with no piece at the start falls back to
+ * its alliance-marking colour (when readable); otherwise unknown.
+ */
+export function groupAlliances(a: MatchAnalysis, groups: RobotGroup[], teamAlliance: "Red" | "Blue"): Map<number, "red" | "blue" | null> {
+  const hive = a.hives.find(h => h.view === a.mainView) ?? a.hives[0];
+  const out = new Map<number, "red" | "blue" | null>();
+  for (const g of groups) {
+    let al: "red" | "blue" | null = null;
+    if (hive) {
+      const centre = (hive.boxes.red.x + hive.boxes.red.w / 2 + hive.boxes.blue.x + hive.boxes.blue.w / 2) / 2;
+      const redLeft = hive.boxes.red.x < hive.boxes.blue.x;
+      const early = a.robots.filter(r => g.ids.includes(r.id) && r.path[0].t <= a.start + 4).sort((p, q) => p.path[0].t - q.path[0].t)[0];
+      if (early) { const left = early.path[0].x < centre; al = left === redLeft ? "red" : "blue"; }
+    }
+    if (!al && Math.abs(g.colour) > 0.005) al = (g.colour > 0) === (teamAlliance === "Red") ? "red" : "blue";
+    out.set(g.rep, al);
+  }
+  return out;
+}
+
+export { robotGroups };
 
 /**
  * The robots in a match: track pieces that look alike and are never on screen at the same time

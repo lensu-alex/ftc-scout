@@ -6,7 +6,8 @@ import { readFrames } from "../helper/ffmpeg";
 import { analyzeMatch, type MatchAnalysis } from "../src/analysis/analyzeMatch";
 import { TinyOverlayReader } from "../src/vision/tinyOcr";
 import { nodeInfer, nodeEmbed, detectorSize } from "../helper/detector";
-import { HiveWatcher, hiveEvents, type HiveSample, type HiveEvent } from "../src/vision/hive";
+import type { HiveEvent } from "../src/vision/hive";
+import { groupAlliances, robotGroups } from "../src/analysis/run";
 import { LaunchEvidence, type RobotBoxAt } from "../src/vision/launchEvidence";
 import { attributeVolleys, perRobot } from "../src/analysis/attribution";
 const [clip720, s720, clip1080, s1080, blueS, redS] = process.argv.slice(2);
@@ -14,23 +15,21 @@ const start720 = +s720, start1080 = +s1080;
 const box = (s: string) => { const [x0, y0, x1, y1] = s.split(",").map(Number); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
 const hives = { blue: box(blueS), red: box(redS) };
 const ALL: Record<string, number[]> = JSON.parse(process.env.ALLIANCE ?? "{}");
-const alliance = (id: number) => (ALL.blue?.includes(id) ? "blue" : ALL.red?.includes(id) ? "red" : null) as "red" | "blue" | null;
+const alliance = (id: number) => (Object.keys(ALL).length ? (ALL.blue?.includes(id) ? "blue" : ALL.red?.includes(id) ? "red" : null) : autoAlliance(id)) as "red" | "blue" | null;
 
-// pass 1: one read of the 720p clip feeds both the analysis and the hive watchers
-const watchers = { blue: new HiveWatcher(hives.blue), red: new HiveWatcher(hives.red) };
-const hs: Record<"blue" | "red", HiveSample[]> = { blue: [], red: [] };
-async function* frames() {
-  for await (const x of readFrames(clip720, 10, Math.max(0, start720 - 3), 165)) {
-    for (const h of ["blue", "red"] as const) { if (x.t < start720 - 0.5) watchers[h].learnStill(x.frame); else hs[h].push(watchers[h].push(x.t - start720, x.frame)); }
-    if (x.t >= start720 - 2) yield x;
-  }
-}
+// pass 1: the analysis finds the hive itself and watches it (hand boxes above are only a fallback for the exclusion zones)
 const t0 = Date.now();
-const a: MatchAnalysis = await analyzeMatch(frames(), start720, new TinyOverlayReader(), { infer: nodeInfer, embedInfer: nodeEmbed, detectSize: detectorSize(), tiles: true });
-const events: (HiveEvent & { hive: "red" | "blue" })[] = [];
-for (const h of ["blue", "red"] as const) for (const e of hiveEvents(hs[h], 100).events) events.push({ ...e, hive: h });
-events.sort((x, y) => x.t - y.t);
-console.log(`pass 1: ${a.robots.length} robot tracks, ${events.filter(e => e.kind === "scored").length} volleys, ${events.filter(e => e.kind === "tip").length} tips in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+const a: MatchAnalysis = await analyzeMatch(readFrames(clip720, 10, Math.max(0, start720 - 3), 165), start720, new TinyOverlayReader(), { infer: nodeInfer, embedInfer: nodeEmbed, detectSize: detectorSize(), tiles: true });
+const events: (HiveEvent & { hive: "red" | "blue" })[] = a.hiveEvents;
+console.log(`pass 1: ${a.robots.length} robot tracks, hive ${JSON.stringify(a.hives.map(h => ({ view: h.view, red: Object.values(h.boxes.red).map(Math.round), blue: Object.values(h.boxes.blue).map(Math.round) })))}`);
+console.log(`        ${events.filter(e => e.kind === "scored").length} volleys, ${events.filter(e => e.kind === "tip").length} tips in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+// alliance per track: from the robot groups' starting side (or the ALLIANCE env when given)
+const groups = robotGroups(a, "Blue");
+const ga = groupAlliances(a, groups, "Blue");
+const trackAlliance = new Map<number, "red" | "blue" | null>();
+for (const g of groups) for (const id of g.ids) trackAlliance.set(id, ga.get(g.rep) ?? null);
+console.log("alliances by start side: " + groups.map(g => `${g.rep}[${g.ids.join(",")}]=${ga.get(g.rep)}`).join("  "));
+const autoAlliance = (id: number) => trackAlliance.get(id) ?? null;
 
 // robot boxes at a match time, scaled to the 1080p frame
 const SC = 1920 / 1280;
@@ -47,7 +46,8 @@ function robotsAt(t: number): RobotBoxAt[] {
 }
 // pass 2: a 1080p burst before each volley
 const scale = (b: { x: number; y: number; w: number; h: number }) => ({ x: b.x * SC, y: b.y * SC, w: b.w * SC, h: b.h * SC });
-const ev = new LaunchEvidence([scale(hives.blue), scale(hives.red)].map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h * 0.5 })));   // upper halves: where balls arrive
+const found = a.hives.find(h => h.view === a.mainView)?.boxes;
+const ev = new LaunchEvidence([scale(found?.blue ?? hives.blue), scale(found?.red ?? hives.red)].map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h * 0.6 })));   // where balls arrive
 const t1 = Date.now();
 let bursts = 0;
 for (const e of events) {

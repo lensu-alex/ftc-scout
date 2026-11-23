@@ -20,6 +20,23 @@ export function attributeVolleys(
   for (const s of samples) for (const [id, v] of s.above) (per.get(id) ?? per.set(id, []).get(id)!).push(v.px);
   const base = new Map<number, number>();
   for (const [id, arr] of per) { const a = [...arr].sort((x, y) => x - y); base.set(id, (a[Math.floor(0.6 * (a.length - 1))] ?? 0) + 1); }
+  // robots whose alliance is unknown: the hive their launch evidence precedes most often is theirs
+  const known = new Map<number, "red" | "blue" | null>();
+  const allIds = new Set<number>(); for (const s of samples) for (const id of s.above.keys()) allIds.add(id);
+  for (const id of allIds) {
+    let al = alliance(id);
+    if (al === null) {
+      const sum = { red: 0, blue: 0 };
+      for (const e of events) {
+        if (e.kind !== "scored") continue;
+        const win = samples.filter(s => s.t >= e.t - 1.7 && s.t <= e.t - 0.3);
+        const vals = win.map(s => s.above.get(id)?.px).filter((v): v is number => v !== undefined);
+        if (vals.length >= 10) sum[e.hive] += vals.reduce((a, v) => a + v, 0) / ((base.get(id) ?? 1) * vals.length);
+      }
+      if (sum.red + sum.blue > 0) al = sum.blue > sum.red ? "blue" : "red";
+    }
+    known.set(id, al);
+  }
   const out: Attribution[] = [];
   for (const e of events) {
     if (e.kind !== "scored") continue;
@@ -27,7 +44,8 @@ export function attributeVolleys(
     const score = new Map<number, { s: number; px: number; rel: number; blobs: number; launches: number }>();
     const ids = new Set<number>(); for (const s of win) for (const id of s.above.keys()) ids.add(id);
     for (const id of ids) {
-      if (alliance(id) !== e.hive) continue;
+      const al = known.get(id) ?? null;
+      if (al !== null && al !== e.hive) continue;
       const vals = win.map(s => s.above.get(id)).filter((v): v is { px: number; blobs: number } => !!v);
       if (vals.length < 10) continue;
       const px = vals.reduce((a, v) => a + v.px, 0), blobs = vals.reduce((a, v) => a + v.blobs, 0);

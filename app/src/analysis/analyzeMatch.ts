@@ -9,6 +9,8 @@ import { RobotTracker, type Track } from "../vision/tracker";
 import { MotionModel } from "../vision/motion";
 import { LaunchDetector, type Launch } from "../vision/launches";
 import { allianceColour, cosine, embed, meanEmbedding, type EmbedInfer } from "../vision/appearance";
+import { findHive, type HiveBoxes } from "../vision/hiveFinder";
+import { HiveWatcher, hiveEvents, type HiveEvent, type HiveSample } from "../vision/hive";
 
 // One pass over a located match: follows the clock, splits the video into camera shots,
 // groups them into camera views, and works out how much of the match each view covers.
@@ -35,6 +37,8 @@ export interface MatchAnalysis {
   framesAnalysed: number;
   robots: RobotSummary[];                                            // robot tracks (image coords for now)
   detections: { t: number; dets: Detection[] }[];                    // per analysed frame, during play
+  hives: { view: number; boxes: HiveBoxes }[];                       // where the hive is, per camera view
+  hiveEvents: (HiveEvent & { hive: "red" | "blue"; view: number })[]; // pollen scored (volleys) and tips, match time
 }
 
 export interface RobotSummary extends Pick<Track, "id" | "hits" | "path"> {
@@ -89,10 +93,41 @@ export async function analyzeMatch(
   const samples: { t: number; view: number }[] = [];
   const readings: (ClockReading & { view: number })[] = [];
   let bar: ScoreBar | null = null, lastClock = -Infinity, lastT: number | null = null, n = 0;
+  // the hive, per camera view: found once from the picture, then watched on every frame (cheap)
+  type HiveState = { boxes: HiveBoxes; watch: Record<"red" | "blue", HiveWatcher>; samples: Record<"red" | "blue", HiveSample[]>; tries: number; lastTry: number };
+  const hives = new Map<number, HiveState>();
+  const hiveTries = new Map<number, { n: number; last: number; finds: HiveBoxes[] }>();
+  let curView = -1;
+  const watchBox = (b: HiveBoxes, which: "red" | "blue") => {
+    // both see-saws share the hive's height; balls can sit in the lower cell too
+    const y0 = Math.min(b.red.y, b.blue.y), y1 = Math.max(b.red.y + b.red.h, b.blue.y + b.blue.h);
+    const box = which === "red" ? b.red : b.blue;
+    return { x: box.x, y: y0, w: box.w, h: (y1 - y0) * 1.15 };
+  };
 
+  let frameW = 1280;
   for await (const { t, frame } of frames) {
+    frameW = frame.width;
     const elapsed = t - start;
     if (elapsed > MATCH_S + 2) break;
+    if (curView >= 0) {
+      let hs = hives.get(curView);
+      // find the hive once play is on (people have left the field), from 3 looks a few seconds apart
+      const tries = hiveTries.get(curView) ?? { n: 0, last: -Infinity, finds: [] as HiveBoxes[] };
+      if (!hs && elapsed >= 1 && tries.n < 8 && t - tries.last >= 2.5) {
+        tries.n++; tries.last = t; hiveTries.set(curView, tries);
+        const found = findHive(frame);
+        if (found && plausibleHive(found, frame.width)) tries.finds.push(found);
+        if (tries.finds.length >= 3 || (tries.finds.length >= 1 && tries.n >= 8)) {
+          const boxes = medianHive(tries.finds);
+          hs = { boxes, watch: { red: new HiveWatcher(watchBox(boxes, "red")), blue: new HiveWatcher(watchBox(boxes, "blue")) }, samples: { red: [], blue: [] }, tries: tries.n, lastTry: t };
+          hives.set(curView, hs);
+        }
+      }
+      // the first half second after the hive is found teaches the watcher the yellow that is always there
+      if (hs && t - hs.lastTry < 0.5) { for (const h of ["red", "blue"] as const) hs.watch[h].learnStill(frame); }
+      else      if (hs) for (const h of ["red", "blue"] as const) { if (elapsed < -0.5) hs.watch[h].learnStill(frame); else hs.samples[h].push(hs.watch[h].push(elapsed, frame)); }
+    }
     if (o.infer && bar && elapsed >= 0 && elapsed <= MATCH_S) {
       const live = robotTracker.tracks.filter(tr => tr.confirmed && t - tr.lastSeen <= 0.6).map(tr => ({ id: tr.id, box: tr.box }));
       for (const l of launcher.push(t, frame, live, roiOf(frame, bar))) {
@@ -107,6 +142,7 @@ export async function analyzeMatch(
     if (!bar || n % 10 === 0) bar = findScoreBar(frame) ?? bar;
     const mask = bar ? [bar.bar, bar.banner] : [];
     const { cut, view } = tracker.push(t, fingerprint(frame, mask));
+    curView = view;
     // the picture shown for a view: one from mid-play when there is one (before the start people
     // are still on the field)
     if ((cut && !thumbs.has(view)) || (elapsed >= 40 && elapsed < 60 && (thumbAt.get(view) ?? -Infinity) < 40)) {
@@ -199,13 +235,37 @@ export async function analyzeMatch(
     live: (notLive.get(id) ?? 0) === 0,
   })).sort((a, b) => b.seconds - a.seconds);
   const main = views.find(v => v.live) ?? null;
+  const hiveOut: MatchAnalysis["hives"] = [], hiveEv: MatchAnalysis["hiveEvents"] = [];
+  for (const [v, hs] of hives) {
+    const nv = remap.get(v) ?? v;
+    hiveOut.push({ view: nv, boxes: hs.boxes });
+    for (const h of ["red", "blue"] as const) for (const e of hiveEvents(hs.samples[h], ballAreaFor(hs.boxes[h], frameW)).events) hiveEv.push({ ...e, hive: h, view: nv });
+  }
+  hiveEv.sort((a, b) => a.t - b.t);
   return {
-    start, shots: tracker.shots, views, mainView: main?.id ?? null,
+    start, shots: tracker.shots, views, mainView: main?.id ?? null, hives: hiveOut, hiveEvents: hiveEv,
     mainCoverage: main ? Math.min(1, main.seconds / MATCH_S) : 0,
     clockChecks, phaseTimes, framesAnalysed: n,
     robots: merged.map(r => ({ ...r, view: remap.get(r.view) ?? r.view })), detections,
   };
 }
+
+/** Two see-saws of similar size, side by side, not overlapping, neither absurdly large. */
+function plausibleHive(h: HiveBoxes, W: number) {
+  const r = h.red, b = h.blue, ratio = r.w / Math.max(1, b.w);
+  if (ratio < 0.6 || ratio > 1.6) return false;
+  if (r.w > 0.22 * W || b.w > 0.22 * W) return false;
+  const overlap = Math.min(r.x + r.w, b.x + b.w) - Math.max(r.x, b.x);
+  return overlap < 0.3 * Math.min(r.w, b.w);
+}
+function medianHive(hs: HiveBoxes[]): HiveBoxes {
+  const med = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s[s.length >> 1]; };
+  const box = (k: "red" | "blue") => ({ x: med(hs.map(h => h[k].x)), y: med(hs.map(h => h[k].y)), w: med(hs.map(h => h[k].w)), h: med(hs.map(h => h[k].h)) });
+  return { red: box("red"), blue: box("blue") };
+}
+
+/** Yellow pixels of one resting ball: ~100 at 720p for a hive box ~145 px wide (Oregon side camera); scales with the box. */
+function ballAreaFor(box: { w: number }, frameW: number) { return Math.max(40, Math.min(400, 100 * (box.w / 145) ** 2 * (1280 / frameW) ** 0)); }
 
 /**
  * Join track pieces of the same robot (it was hidden for a moment, so the tracker started a new
