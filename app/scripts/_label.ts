@@ -1,0 +1,15 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1300, height: 820 } });
+p.on("console", m => console.log("console:", m.text()));
+await p.goto("http://127.0.0.1:47620");
+await p.waitForTimeout(1500);
+console.log(await p.textContent("#bar"));
+const c = (await p.$("canvas"))!.boundingBox();
+const bb = (await c)!;
+await p.mouse.move(bb.x + 100, bb.y + 100); await p.mouse.down(); await p.mouse.move(bb.x + 200, bb.y + 180); await p.mouse.up();
+await p.screenshot({ path: "../tools/debug/label_page.png" });
+await p.keyboard.press("Enter");
+await p.waitForTimeout(800);
+console.log(await p.textContent("#bar"));
+await b.close();

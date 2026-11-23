@@ -1,0 +1,101 @@
+{
+"or18_005": [
+ {"box": [353,288,425,344], "far": true, "hidden": false},
+ {"box": [175,388,350,520], "far": false, "hidden": false},
+ {"box": [858,288,925,345], "far": true, "hidden": false},
+ {"box": [1015,372,1150,478], "far": false, "hidden": false}],
+"or18_013": [
+ {"box": [353,288,425,344], "far": true, "hidden": false},
+ {"box": [750,388,905,530], "far": false, "hidden": false},
+ {"box": [1015,372,1150,478], "far": false, "hidden": false}],
+"or18_021": [
+ {"box": [354,290,432,345], "far": true, "hidden": true},
+ {"box": [360,318,460,377], "far": true, "hidden": false},
+ {"box": [862,305,975,377], "far": true, "hidden": false},
+ {"box": [1015,372,1150,478], "far": false, "hidden": false}],
+"or18_029": [
+ {"box": [353,288,425,344], "far": true, "hidden": false},
+ {"box": [541,279,619,348], "far": true, "hidden": false},
+ {"box": [920,340,1035,428], "far": false, "hidden": false},
+ {"box": [1020,372,1150,478], "far": false, "hidden": false}],
+"or18_037": [
+ {"box": [320,293,419,371], "far": true, "hidden": false},
+ {"box": [340,291,416,330], "far": true, "hidden": true},
+ {"box": [920,340,1035,428], "far": false, "hidden": false},
+ {"box": [1020,372,1150,478], "far": false, "hidden": false}],
+"or18_045": [
+ {"box": [555,302,650,372], "far": true, "hidden": false},
+ {"box": [652,288,725,347], "far": true, "hidden": false},
+ {"box": [627,374,836,530], "far": false, "hidden": false},
+ {"box": [862,340,990,428], "far": false, "hidden": false}],
+"or18_053": [
+ {"box": [261,320,376,424], "far": false, "hidden": false},
+ {"box": [598,293,680,350], "far": true, "hidden": false},
+ {"box": [678,293,744,358], "far": true, "hidden": false},
+ {"box": [572,370,766,510], "far": false, "hidden": false}],
+"or18_061": [
+ {"box": [522,378,708,520], "far": false, "hidden": false},
+ {"box": [698,333,784,428], "far": true, "hidden": false},
+ {"box": [862,308,948,382], "far": true, "hidden": false},
+ {"box": [865,380,1010,482], "far": false, "hidden": false}],
+"or18_069": [
+ {"box": [378,362,500,432], "far": false, "hidden": false},
+ {"box": [712,352,840,430], "far": false, "hidden": false},
+ {"box": [800,277,905,340], "far": true, "hidden": false},
+ {"box": [768,300,852,372], "far": true, "hidden": true}],
+"or18_077": [
+ {"box": [588,355,712,436], "far": false, "hidden": false},
+ {"box": [665,338,760,430], "far": false, "hidden": false},
+ {"box": [730,286,832,357], "far": true, "hidden": false},
+ {"box": [822,382,953,512], "far": false, "hidden": false}],
+"or18_085": [
+ {"box": [565,300,632,366], "far": true, "hidden": false},
+ {"box": [653,300,728,369], "far": true, "hidden": false},
+ {"box": [197,368,360,505], "far": false, "hidden": false},
+ {"box": [360,360,498,485], "far": false, "hidden": false}],
+"or18_093": [
+ {"box": [408,345,535,432], "far": false, "hidden": false},
+ {"box": [734,296,800,364], "far": true, "hidden": false},
+ {"box": [880,298,992,407], "far": true, "hidden": false},
+ {"box": [845,298,900,362], "far": true, "hidden": true}],
+"or18_101": [
+ {"box": [612,291,700,372], "far": true, "hidden": false},
+ {"box": [368,352,495,452], "far": false, "hidden": false},
+ {"box": [558,356,690,463], "far": false, "hidden": false},
+ {"box": [300,405,457,522], "far": false, "hidden": false}],
+"or18_109": [
+ {"box": [397,308,490,377], "far": true, "hidden": false},
+ {"box": [605,305,735,392], "far": true, "hidden": false},
+ {"box": [585,345,690,432], "far": false, "hidden": false},
+ {"box": [420,390,625,530], "far": false, "hidden": false}],
+"or18_117": [
+ {"box": [375,280,472,348], "far": true, "hidden": false},
+ {"box": [553,305,638,377], "far": true, "hidden": false},
+ {"box": [490,352,613,430], "far": false, "hidden": false},
+ {"box": [1020,375,1170,480], "far": false, "hidden": false}],
+"or18_125": [
+ {"box": [225,345,370,472], "far": false, "hidden": false},
+ {"box": [600,320,725,422], "far": false, "hidden": false},
+ {"box": [595,312,655,400], "far": true, "hidden": true},
+ {"box": [712,372,842,488], "far": false, "hidden": false}],
+"or18_133": [
+ {"box": [303,309,388,377], "far": true, "hidden": false},
+ {"box": [525,334,690,431], "far": false, "hidden": false},
+ {"box": [672,332,797,430], "far": false, "hidden": false},
+ {"box": [780,388,950,516], "far": false, "hidden": false}],
+"or18_141": [
+ {"box": [415,300,504,370], "far": true, "hidden": false},
+ {"box": [565,282,645,345], "far": true, "hidden": false},
+ {"box": [795,338,880,428], "far": false, "hidden": false},
+ {"box": [830,378,982,495], "far": false, "hidden": false}],
+"or18_149": [
+ {"box": [345,302,445,385], "far": true, "hidden": false},
+ {"box": [628,300,713,370], "far": true, "hidden": false},
+ {"box": [633,402,785,535], "far": false, "hidden": false},
+ {"box": [984,368,1128,480], "far": false, "hidden": false}],
+"or18_157": [
+ {"box": [299,318,407,380], "far": true, "hidden": false},
+ {"box": [322,293,425,355], "far": true, "hidden": true},
+ {"box": [406,378,582,500], "far": false, "hidden": false},
+ {"box": [982,368,1128,480], "far": false, "hidden": false}]
+}

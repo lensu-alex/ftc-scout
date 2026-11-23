@@ -1,0 +1,25 @@
+# dependencies / builds
+node_modules/
+app/dist/
+*.tsbuildinfo
+*.log
+.DS_Store
+
+# dev-only Tesseract data (downloaded on demand)
+app/eng.traineddata
+
+# large dev data: datasets, clips, debug output, training runs, model weights
+tools/.venv/
+tools/__pycache__/
+tools/dataset/
+tools/clips/
+tools/debug/
+tools/runs/
+tools/frames/
+tools/gt/frames/
+tools/gt/grid/
+tools/models/
+tools/*.pt
+tools/meta.json
+tools/err.txt
+tools/url720.txt

@@ -1,0 +1,11 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
+const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
+p.on("pageerror", e => console.log("pageerror:", e.message));
+await p.goto("http://127.0.0.1:47621");
+await p.waitForTimeout(6000);
+await p.keyboard.press("j"); await p.keyboard.press("f"); await p.keyboard.press("j"); await p.keyboard.press("Backspace");
+await p.waitForTimeout(800);
+console.log(await p.textContent("#count"), "|", await p.textContent("#status"));
+await p.screenshot({ path: "../tools/debug/launch_page.png" });
+await b.close();

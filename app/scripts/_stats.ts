@@ -1,0 +1,10 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
+p.on("pageerror", e => console.log("pageerror:", e.message));
+await p.goto("http://localhost:5173/");
+await p.evaluate(() => localStorage.removeItem("ftcscout.field.USORSFM1"));
+await p.goto("http://localhost:5173/?team=12808");
+await p.waitForTimeout(10000);
+await (await p.$("section.card:has(.tiles)"))!.screenshot({ path: "../tools/debug/stats_now.png" });
+await b.close();

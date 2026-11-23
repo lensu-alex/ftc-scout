@@ -1,0 +1,16 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
+p.on("console", m => { if (m.type() === "error") console.log("console:", m.text().slice(0, 300)); });
+p.on("pageerror", e => console.log("pageerror:", e.message));
+await p.goto("http://localhost:5173/?team=12808");
+await p.waitForTimeout(9000);
+await p.click("button.small-btn");
+const pic = (await (await p.$(".corner-pic"))!.boundingBox())!;
+for (const [x, y] of [[75, 520], [370, 290], [925, 290], [1230, 520]]) await p.mouse.click(pic.x + x / 1280 * pic.width, pic.y + y / 720 * pic.height);
+await (await p.$(".field-corners"))!.screenshot({ path: "../tools/debug/field_click.png" });
+await p.click("text=Save field");
+await p.waitForTimeout(800);
+const card = await p.$("section.card:has(.tiles)");
+await card!.screenshot({ path: "../tools/debug/field_stats.png" });
+await b.close();

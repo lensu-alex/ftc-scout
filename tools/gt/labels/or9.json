@@ -1,0 +1,22 @@
+{
+"or9_005": [{"box":[338,252,412,326],"far":true,"hidden":false},{"box":[640,266,716,330],"far":true,"hidden":false},{"box":[243,402,426,532],"far":false,"hidden":false},{"box":[1055,402,1238,530],"far":false,"hidden":false}],
+"or9_013": [{"box":[338,252,412,326],"far":true,"hidden":false},{"box":[640,266,716,330],"far":true,"hidden":false},{"box":[243,402,426,532],"far":false,"hidden":false},{"box":[1055,402,1238,530],"far":false,"hidden":false}],
+"or9_021": [{"box":[338,252,412,326],"far":true,"hidden":false},{"box":[505,272,580,336],"far":true,"hidden":false},{"box":[640,372,785,505],"far":false,"hidden":false},{"box":[1055,402,1238,530],"far":false,"hidden":false}],
+"or9_029": [{"box":[338,250,413,326],"far":true,"hidden":false},{"box":[228,330,372,420],"far":false,"hidden":false},{"box":[1005,372,1178,485],"far":false,"hidden":false},{"box":[1055,400,1178,528],"far":false,"hidden":false}],
+"or9_037": [{"box":[340,258,415,308],"far":true,"hidden":true},{"box":[310,295,405,368],"far":true,"hidden":false},{"box":[1005,372,1180,480],"far":false,"hidden":false},{"box":[1055,400,1240,530],"far":false,"hidden":false}],
+"or9_045": [{"box":[340,256,412,306],"far":true,"hidden":true},{"box":[312,298,405,366],"far":true,"hidden":false},{"box":[1005,372,1180,480],"far":false,"hidden":false},{"box":[1055,400,1240,530],"far":false,"hidden":false}],
+"or9_053": [{"box":[352,255,440,330],"far":true,"hidden":false},{"box":[356,300,485,398],"far":true,"hidden":false},{"box":[290,395,470,520],"far":false,"hidden":false},{"box":[995,372,1145,478],"far":false,"hidden":false}],
+"or9_061": [{"box":[372,330,543,530],"far":false,"hidden":false},{"box":[70,425,255,515],"far":false,"hidden":true},{"box":[785,328,925,400],"far":true,"hidden":false},{"box":[762,395,925,535],"far":false,"hidden":false}],
+"or9_069": [{"box":[282,315,390,395],"far":true,"hidden":false},{"box":[573,255,652,330],"far":true,"hidden":false},{"box":[855,298,965,368],"far":true,"hidden":false},{"box":[362,360,510,472],"far":false,"hidden":false}],
+"or9_077": [{"box":[356,365,532,490],"far":false,"hidden":false},{"box":[592,300,692,378],"far":true,"hidden":false},{"box":[622,325,805,490],"far":false,"hidden":false}],
+"or9_085": [{"box":[575,295,695,392],"far":true,"hidden":false},{"box":[665,325,812,525],"far":false,"hidden":false},{"box":[488,380,700,522],"far":false,"hidden":false},{"box":[585,282,695,315],"far":true,"hidden":true}],
+"or9_093": [{"box":[530,262,605,345],"far":true,"hidden":false},{"box":[603,280,712,345],"far":true,"hidden":false},{"box":[702,280,800,350],"far":true,"hidden":false}],
+"or9_101": [{"box":[245,312,372,395],"far":true,"hidden":false},{"box":[405,322,540,470],"far":false,"hidden":false},{"box":[712,288,790,338],"far":true,"hidden":false},{"box":[775,293,870,372],"far":true,"hidden":false}],
+"or9_109": [{"box":[585,282,702,365],"far":true,"hidden":false},{"box":[700,262,755,330],"far":true,"hidden":false},{"box":[815,285,930,365],"far":true,"hidden":false}],
+"or9_117": [{"box":[160,370,300,480],"far":false,"hidden":false},{"box":[315,345,440,465],"far":false,"hidden":false},{"box":[520,372,695,505],"far":false,"hidden":false},{"box":[735,370,880,510],"far":false,"hidden":false}],
+"or9_125": [{"box":[402,280,470,336],"far":true,"hidden":false},{"box":[553,270,660,358],"far":true,"hidden":false},{"box":[715,283,800,348],"far":true,"hidden":false},{"box":[312,375,498,500],"far":false,"hidden":false}],
+"or9_133": [{"box":[403,285,500,357],"far":true,"hidden":false},{"box":[505,280,585,340],"far":true,"hidden":false},{"box":[712,268,805,340],"far":true,"hidden":false},{"box":[805,268,885,338],"far":true,"hidden":false}],
+"or9_141": [{"box":[375,345,520,478],"far":false,"hidden":false},{"box":[590,262,672,340],"far":true,"hidden":false},{"box":[915,375,1110,500],"far":false,"hidden":false}],
+"or9_149": [{"box":[548,290,668,410],"far":true,"hidden":false},{"box":[600,345,770,425],"far":false,"hidden":false},{"box":[765,268,842,332],"far":true,"hidden":false}],
+"or9_157": [{"box":[555,275,642,332],"far":true,"hidden":false},{"box":[735,285,820,348],"far":true,"hidden":false},{"box":[675,330,810,485],"far":false,"hidden":false},{"box":[820,365,978,485],"far":false,"hidden":false}]
+}

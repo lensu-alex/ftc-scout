@@ -1,0 +1,842 @@
+{
+ "micoq_005": [
+  {
+   "box": [
+    345,
+    40,
+    437,
+    135
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    638,
+    64,
+    698,
+    100
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    295,
+    375,
+    370,
+    468
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    782,
+    376,
+    873,
+    464
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_013": [
+  {
+   "box": [
+    345,
+    40,
+    437,
+    133
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    640,
+    166,
+    719,
+    234
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    295,
+    376,
+    370,
+    468
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    782,
+    375,
+    873,
+    463
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_021": [
+  {
+   "box": [
+    345,
+    40,
+    437,
+    133
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    640,
+    166,
+    719,
+    234
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    295,
+    376,
+    370,
+    467
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    782,
+    375,
+    873,
+    463
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_029": [
+  {
+   "box": [
+    345,
+    40,
+    437,
+    133
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    640,
+    166,
+    719,
+    234
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    295,
+    376,
+    370,
+    467
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    782,
+    375,
+    873,
+    463
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_037": [
+  {
+   "box": [
+    345,
+    40,
+    437,
+    133
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    640,
+    166,
+    719,
+    234
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    295,
+    376,
+    370,
+    467
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    782,
+    375,
+    873,
+    463
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_045": [
+  {
+   "box": [
+    382,
+    78,
+    455,
+    168
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    598,
+    108,
+    660,
+    170
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    566,
+    362,
+    658,
+    443
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    502,
+    420,
+    583,
+    495
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_053": [
+  {
+   "box": [
+    352,
+    40,
+    432,
+    130
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    636,
+    100,
+    700,
+    166
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    379,
+    392,
+    470,
+    495
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    461,
+    462,
+    560,
+    548
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_061": [
+  {
+   "box": [
+    658,
+    60,
+    720,
+    108
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    350,
+    338,
+    446,
+    416
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    303,
+    458,
+    388,
+    545
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    464,
+    448,
+    553,
+    532
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_069": [
+  {
+   "box": [
+    655,
+    98,
+    720,
+    160
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    514,
+    398,
+    594,
+    471
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    466,
+    457,
+    568,
+    545
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    716,
+    387,
+    804,
+    472
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_077": [
+  {
+   "box": [
+    645,
+    100,
+    720,
+    172
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    420,
+    375,
+    512,
+    457
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    652,
+    354,
+    733,
+    431
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    453,
+    483,
+    538,
+    545
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_085": [
+  {
+   "box": [
+    602,
+    102,
+    662,
+    172
+   ],
+   "far": true,
+   "hidden": true
+  },
+  {
+   "box": [
+    410,
+    340,
+    492,
+    438
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    315,
+    403,
+    398,
+    502
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    680,
+    430,
+    778,
+    520
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_093": [
+  {
+   "box": [
+    622,
+    56,
+    690,
+    110
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    470,
+    112,
+    543,
+    190
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    656,
+    157,
+    728,
+    224
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    682,
+    457,
+    763,
+    545
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_101": [
+  {
+   "box": [
+    553,
+    47,
+    615,
+    132
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    794,
+    63,
+    878,
+    140
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    626,
+    158,
+    697,
+    210
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    461,
+    358,
+    540,
+    433
+   ],
+   "far": false,
+   "hidden": false
+  }
+ ],
+ "micoq_109": [
+  {
+   "box": [
+    478,
+    63,
+    543,
+    142
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    555,
+    36,
+    620,
+    120
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    744,
+    125,
+    823,
+    198
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    616,
+    168,
+    692,
+    226
+   ],
+   "far": true,
+   "hidden": false
+  }
+ ],
+ "micoq_117": [
+  {
+   "box": [
+    538,
+    35,
+    605,
+    120
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    408,
+    163,
+    490,
+    250
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    498,
+    163,
+    573,
+    230
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    667,
+    133,
+    748,
+    202
+   ],
+   "far": true,
+   "hidden": false
+  }
+ ],
+ "micoq_125": [
+  {
+   "box": [
+    465,
+    77,
+    545,
+    158
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    540,
+    35,
+    605,
+    120
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    685,
+    100,
+    767,
+    177
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    590,
+    172,
+    662,
+    205
+   ],
+   "far": true,
+   "hidden": true
+  }
+ ],
+ "micoq_133": [
+  {
+   "box": [
+    458,
+    78,
+    515,
+    163
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    578,
+    70,
+    645,
+    165
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    812,
+    58,
+    878,
+    122
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    588,
+    198,
+    615,
+    264
+   ],
+   "far": true,
+   "hidden": true
+  }
+ ],
+ "micoq_141": [
+  {
+   "box": [
+    330,
+    198,
+    412,
+    262
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    733,
+    115,
+    802,
+    190
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    616,
+    316,
+    710,
+    400
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    535,
+    70,
+    598,
+    158
+   ],
+   "far": true,
+   "hidden": false
+  }
+ ],
+ "micoq_149": [
+  {
+   "box": [
+    388,
+    283,
+    458,
+    353
+   ],
+   "far": false,
+   "hidden": false
+  },
+  {
+   "box": [
+    665,
+    108,
+    733,
+    172
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    535,
+    42,
+    597,
+    105
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    520,
+    100,
+    590,
+    168
+   ],
+   "far": true,
+   "hidden": false
+  }
+ ],
+ "micoq_157": [
+  {
+   "box": [
+    393,
+    122,
+    472,
+    198
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    490,
+    72,
+    555,
+    140
+   ],
+   "far": true,
+   "hidden": true
+  },
+  {
+   "box": [
+    500,
+    145,
+    570,
+    198
+   ],
+   "far": true,
+   "hidden": false
+  },
+  {
+   "box": [
+    812,
+    58,
+    878,
+    123
+   ],
+   "far": true,
+   "hidden": false
+  }
+ ]
+}

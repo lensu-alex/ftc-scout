@@ -1,0 +1,13 @@
+import { chromium } from "playwright-core";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1300, height: 900 } });
+p.on("pageerror", e => console.log("pageerror:", e.message));
+await p.goto("http://localhost:5173/?team=22173");
+await p.waitForTimeout(10000);
+const btn = null;
+if (btn) await btn.click();
+await p.waitForTimeout(500);
+const card = await p.$("section.card:has(.confirm-row)");
+console.log("rows:", (await p.$$(".confirm-row")).length);
+if (card) await card.screenshot({ path: "../tools/debug/check22173.png" });
+await b.close();
