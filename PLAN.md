@@ -462,3 +462,15 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   robot whose launch cluster precedes it; the hive count stays the number of balls scored. Launched per robot =
   its launch clusters (with misses), scored per robot = attributed arrivals.
 - Dead ends recorded above (720p attribution cues, MIL classifier) stay recorded: at 720p the information is not there.
+- Q1 at 1080p, per volley (`tools/attr1080.py` → `attribute_final.py`, alliance of each track fixed by hand from plates):
+  blue 26 volleys, 17 with a clear winner (confidence ≥ 0.6), red 12 volleys, 9 clear. Flight clusters agree with the
+  winner wherever they fire. Per robot: 12808 ≈ 23 sure + 2 unsure balls (16 volleys), 11703 ≈ 13 + 3, of the blue
+  hive's 41; red 11556 ≈ 8 + 1, 14687 ≈ 4 + 1 of 14. The unsure volleys are the ones where both alliance robots sit
+  under the hive and shoot in turn.
+- Two things the app must get right for per-team numbers, both now feasible at 1080p: (1) which track is which
+  team: plates are readable by eye in 1080p frames (11703, 12808) → a plate reader on 1080p crops should replace the
+  "which one is your team" tap; (2) alliance of every track: from the start positions (red side / blue side at 0 s)
+  carried along by appearance linking; inferring it from launch evidence alone was wrong for 2 of 12 tracks.
+- Next build (pass 2 in the helper): fetch 1080p (format 137) bursts of 1.6 s before each hive volley, run the
+  above-robot evidence + flight tracker on them, fuse per volley with the alliance constraint; show per-team
+  scored = sure + unsure; read plates from the same 1080p bursts.
