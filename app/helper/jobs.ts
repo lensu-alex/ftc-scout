@@ -83,10 +83,12 @@ function scoringFor(job: Job, key: string, alliance: "Red" | "Blue", a?: MatchAn
  * Pass 2: who shot each volley. For every volley the hive saw, a short 1080p burst (the 1.6 s before the
  * balls arrived) is read from the stream and the launch evidence above each robot is measured.
  */
-async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void, onPieces: (ids: number[]) => void, onLooks: (sl: ShotLooks) => void): Promise<Attribution[] | null> {
+async function attributeMatch(url1080: string, height: number, m: TeamMatch, start: number, a: MatchAnalysis, signal: AbortSignal, say: (s: string) => void, onPieces: (ids: number[]) => void, onLooks: (sl: ShotLooks) => void): Promise<Attribution[] | null> {
   const volleys = a.hiveEvents.filter(e => e.kind === "scored");
   if (!volleys.length) return [];
-  const SC = 1920 / 1280;
+  // 1080p when the stream has it; otherwise the same pass on 720p (weaker: the launch streaks are smaller)
+  const FW = height >= 1080 ? 1920 : 1280, FH = height >= 1080 ? 1080 : 720;
+  const SC = FW / 1280;
   const hive = a.hives.find(h => h.view === a.mainView)?.boxes ?? a.hives[0]?.boxes;
   const exclude = hive ? [hive.red, hive.blue].map(b => ({ x: b.x * SC, y: b.y * SC, w: b.w * SC, h: b.h * SC * 0.6 })) : [];
   const ev = new LaunchEvidence(exclude);
@@ -103,7 +105,7 @@ async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: M
     if (signal.aborted) return null;
     let robots: RobotBoxAt[] = [], n = 0; const keep: (typeof kept)[number] = [];
     try {
-      for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: 1920, h: 1080 })) {
+      for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: FW, h: FH })) {
         robots = robotsAt(t - start); ev.push(t - start, frame, robots);
         if (n % 16 === 8) keep.push({ frame, robots });
         n++;
@@ -112,7 +114,7 @@ async function attributeMatch(url1080: string, m: TeamMatch, start: number, a: M
     ev.flush(robots); kept.push(keep);
     if (n >= 20) got++;
   }
-  if (!got) { say(`${m.description}: no 1080p video for the launch pass`); return null; }
+  if (!got) { say(`${m.description}: no video for the launch pass`); return null; }
   const groups = robotGroups(a, m.alliance), ga = groupAlliances(a, groups, m.alliance);
   const trackAlliance = new Map<number, "red" | "blue" | null>();
   for (const g of groups) for (const id of g.ids) trackAlliance.set(id, ga.get(g.rep) ?? null);
@@ -170,12 +172,13 @@ async function run(job: Job, signal: AbortSignal) {
         attributions.set(job.id, per);
         try {
           const hd = await resolveStream(job.videoId, false, 1080);
+          say(hd.height >= 1080 ? "launch pass at 1080p" : `launch pass at ${hd.height}p (stream has no 1080p)`);
           const pieces = alliancePieces.get(job.id) ?? new Map<string, number[]>();
           alliancePieces.set(job.id, pieces);
           for (const [key, d] of done) {
             if (signal.aborted) break;
             const lk = shotLooks.get(job.id) ?? new Map<string, ShotLooks>(); shotLooks.set(job.id, lk);
-            per.set(key, await attributeMatch(hd.url, d.m, d.start, d.analysis, signal, say, ids => pieces.set(key, ids), sl => lk.set(key, sl)));
+            per.set(key, await attributeMatch(hd.url, hd.height, d.m, d.start, d.analysis, signal, say, ids => pieces.set(key, ids), sl => lk.set(key, sl)));
           }
         } catch (e) { say(`launch pass skipped: ${(e as Error).message}`); }
       }

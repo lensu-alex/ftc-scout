@@ -10,7 +10,7 @@ export interface RobotBoxAt { id: number; box: Box }   // box in this frame's pi
 export interface EvidenceSample { t: number; above: Map<number, { px: number; blobs: number }> }
 export interface Launch { t: number; robot: number; x: number; y: number; points: number }
 
-const MAX_BLOB = 450;     // px at 1080p: bigger changes are people, robots, the hive moving
+const MAX_BLOB_1080 = 450;     // px at 1080p: bigger changes are people, robots, the hive moving
 
 function yellowness(f: Frame, out: Int16Array) {
   const d = f.data;
@@ -65,6 +65,7 @@ export class LaunchEvidence {
     };
     for (const b of this.exclude) clear(b);
     for (const r of robots) clear(r.box);                       // balls carried inside a robot, its lights
+    const k = (w / 1920) ** 2, MAX_BLOB = MAX_BLOB_1080 * k, MIN_BLOB = Math.max(3, 6 * k), G = w / 1920;
     const { lab, sizes, cx, cy } = label(mask, w, h);
     const big = new Uint8Array(sizes.length);
     sizes.forEach((s, i) => { if (s > MAX_BLOB) big[i] = 1; });
@@ -84,13 +85,13 @@ export class LaunchEvidence {
     this.samples.push({ t, above });
     // blobs → tracks (forward linking with a constant-velocity guess)
     const blobs: { x: number; y: number }[] = [];
-    for (let i = 1; i < sizes.length; i++) if (sizes[i] >= 6 && !big[i]) blobs.push({ x: cx[i], y: cy[i] });
+    for (let i = 1; i < sizes.length; i++) if (sizes[i] >= MIN_BLOB && !big[i]) blobs.push({ x: cx[i], y: cy[i] });
     const used = new Set<number>();
     for (const tr of this.tracks) {
       const n = tr.pts.length, last = tr.pts[n - 1];
       let px = last.x, py = last.y;
       if (n > 1) { px = 2 * last.x - tr.pts[n - 2].x; py = 2 * last.y - tr.pts[n - 2].y; }
-      const gate = n > 1 ? 40 : 70;
+      const gate = (n > 1 ? 40 : 70) * G;
       let best = gate, bj = -1;
       blobs.forEach((b, j) => { if (!used.has(j)) { const dd = Math.hypot(b.x - px, b.y - py); if (dd < best) { best = dd; bj = j; } } });
       if (bj >= 0) { used.add(bj); tr.pts.push({ t, ...blobs[bj] }); tr.miss = 0; } else tr.miss++;
@@ -108,7 +109,8 @@ export class LaunchEvidence {
     const P = tr.pts;
     if (P.length < 3) return;
     const a = P[0], b = P[P.length - 1];
-    if (Math.hypot(b.x - a.x, b.y - a.y) < 50 || b.y > a.y + 10) return;   // must travel and rise
+    const G = this.w / 1920;
+    if (Math.hypot(b.x - a.x, b.y - a.y) < 50 * G || b.y > a.y + 10 * G) return;   // must travel and rise
     let best: { d: number; id: number } | null = null;
     for (const r of robots) {
       const s = r.box.h / 0.9;

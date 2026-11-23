@@ -34,7 +34,9 @@ console.log("alliances by start side: " + groups.map(g => `${g.rep}[${g.ids.join
 const autoAlliance = (id: number) => trackAlliance.get(id) ?? null;
 
 // robot boxes at a match time, scaled to the 1080p frame
-const SC = 1920 / 1280;
+const HD = process.env.PASS2_720 ? false : true;
+const FW = HD ? 1920 : 1280, FH = HD ? 1080 : 720;
+const SC = FW / 1280;
 function robotsAt(t: number): RobotBoxAt[] {
   const out: RobotBoxAt[] = [];
   for (const r of a.robots) {
@@ -57,7 +59,7 @@ for (const e of events) {
   if (e.kind !== "scored") continue;
   const from = e.t - 1.8;
   let robots: RobotBoxAt[] = [], i = 0; const keep: (typeof kept)[number] = [];
-  for await (const { t, frame } of readFrames(clip1080, 30, start1080 + from, 1.6, { w: 1920, h: 1080 })) {
+  for await (const { t, frame } of readFrames(clip1080, 30, start1080 + from, 1.6, { w: FW, h: FH })) {
     robots = robotsAt(t - start1080);
     ev.push(t - start1080, frame, robots);
     if (i % 16 === 8) keep.push({ t: t - start1080, frame, robots });
