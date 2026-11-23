@@ -444,3 +444,21 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   robots boxed at the launch moment ("who shot this?"), one tap each; those taps become training labels for a
   small "shooting now?" classifier on robot crops, which should replace the taps after a few matches. Per-team
   counts are shown as sure + unsure until resolved.
+
+**2026-11-23 (night): the streams are 1080p, and that changes the launch problem**
+- `yt-dlp -F` on the test streams: Oregon league, Netherlands, Michigan, Iowa, Ohio all offer **1920x1080** (format 137);
+  only the Oregon scrimmage and Alabama are 720p. The helper fetched format 136 (720p) to save bandwidth and the
+  plan wrongly recorded "720p max".
+- At 1080p, 30 fps, the balls leaving a robot are plainly visible as separate yellow balls above it for several
+  frames (`tools/debug/burst/h60_sheet.png`, 59.8-60.6 s of Q1). The plate on that robot reads **11703**: the user's
+  mark at 60.4 s ("team") was the partner. Hand marks are not truth.
+- `tools/flights1080.py` (chroma-change yellow blobs above a robot, linked over 3+ frames, rising): on a 30 s 1080p
+  clip of Q1 it finds launch clusters per robot that precede the hive arrivals for both alliances
+  (robot 1 = 11703: 7 launches 58.9-60.9 → blue +1 at 60.85 after the tip; robot 3 = 14687: 4 launches 63.6-64.5 →
+  red +1 at 64.55; robot 0 = 11556: 66.0 → red +1 at 66.45). Counts over-read (misses, balls bouncing out) and
+  need reconciling with the hive counts.
+- Design now: pass 1 at 720p/10 fps as today (tracks, hive volleys + tips). Pass 2: for each volley, a 1080p 30 fps
+  burst of the 1.5 s before it (~24 bursts x 1.5 s per match, ~15 MB) → launches per robot → the volley goes to the
+  robot whose launch cluster precedes it; the hive count stays the number of balls scored. Launched per robot =
+  its launch clusters (with misses), scored per robot = attributed arrivals.
+- Dead ends recorded above (720p attribution cues, MIL classifier) stay recorded: at 720p the information is not there.
