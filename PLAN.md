@@ -559,3 +559,5 @@ is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are
   robot parked next to the far hive toggling the count (21 → 13 volleys). One ball's area is now measured from lone
   round blobs seen in the box, used only above the box-size guess (from the side lone blobs are fragments):
   Netherlands 13 → 5 volleys (true ~2), Michigan 3, Oregon unchanged (36 / 40).
+- Regression after the night's hive work (`check-all quick`): or1 36/6 29 clear; or5 40/6 35; or9 44/7 28; or18 43/14
+  39; q10 24/5 21; m1 13/2 9; nlron 5/0 4; micoq 3/1 1. Top-down matches now at their true scale.
