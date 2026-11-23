@@ -408,3 +408,8 @@ Ground truth: the user's 56 hand-marked launches of 12808 in Oregon Q1 (15 volle
   which robot was in a shooting pose 0.3-1 s before; (2) find the hive cell window automatically per camera view
   (red/blue tube outlines above the field centre; one tap as fallback); (3) the hive-state (panel) switch;
   (4) validate on a second stream and a top-down camera (Michigan) where the cell is seen from above.
+- App module `vision/hive.ts` (+ `scripts/eval-hive.ts`), 10 fps, no model, 10 s per match: on Q1 with the
+  up-facing blue cell as the box, 13/15 marked volleys show as scored events (the 2 missed: two volleys 2.7 s
+  apart merged into one; small steps in the panel-occluded state), 9 tips; counts exact where the row is
+  unoccluded (+4, +3), low where the panel hides balls (38 counted vs 56 launched, misses unknown).
+  Next: calibrate ball area per hive state; shorter plateaus; attribute volleys to robots; hive box per view.
