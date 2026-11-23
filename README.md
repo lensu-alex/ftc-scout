@@ -80,7 +80,7 @@ Overlay scores are never read or used.
 | `eval-pass2.ts <clip720> <start> <clip1080> <start> <blueBox> <redBox>` | two passes: robots + hive volleys at 720p, then 1080p bursts before each volley → which robot scored it (`ALLIANCE` env = track ids per alliance) |
 | `_detcount.ts`, `_detviz.ts`, `_flight.ts`, `_shot.ts`, `_confirm.ts` | scratch checks: robots per frame, boxes on a frame, ball flights, page screenshots, the confirmation flow |
 
-Launch-counting experiments (`tools/`, 30 fps native): `flights.py` (balls in flight from robots), `hive_activity.py`, `cell_count.py`, `rim_cross.py`, `row_count.py <clip> <start> <out> x0,y0,x1,y1` (balls resting in a hive cell).
+Launch-counting experiments (`tools/`, dev only; the app's `vision/hive.ts`, `vision/launchEvidence.ts` and `analysis/attribution.ts` are their result): `flights.py` / `flights1080.py` (balls in flight from robots at 720p / 1080p), `hive_activity.py`, `cell_count.py`, `rim_cross.py`, `row_count.py`, `disc_count.py` (pollen in a hive cell, several ways), `attr1080.py` + `attribute_final.py` (launch evidence above each robot, fused per volley), `attribute*.py`, `entry*.py`, `backtrack.py`, `stillshoot.py`, `shotfeat.py` + `shooter_mil.py` (dead ends, kept for the record), `find_hive.py` / `find_hive2.py` (the hive finder before its port).
 
 Model work (`tools/`): `prelabel.py [student.pt]` (auto-labels, v3 = motion-checked; `PRELABEL_ONLY`, `PRELABEL_ROOT`),
 `train.py <name> <base.pt> <imgsz> [epochs]` and `bench.py <names…>` (`FTC_DATA` = dataset folder).
