@@ -90,7 +90,8 @@ if (process.env.SEED) {
     const x = att[k]; if (x.robot === null) continue;
     for (const fr of kept[k] ?? []) { const rb = fr.robots.find(r => r.id === x.robot); if (rb) await sl.add(k, fr.frame, rb.box); }
   }
-  const calls = callVolleys(att, looks, i => sl.look(i), sp, [seed]);
+  const spans = a.robots.map(r => ({ id: r.id, from: r.path[0].t - start720, to: r.path[r.path.length - 1].t - start720 }));
+  const calls = callVolleys(att, looks, i => sl.look(i), sp, [seed], spans);
   const tally = { team: { sure: 0, unsure: 0 }, partner: { sure: 0, unsure: 0 }, none: 0 };
   for (let k = 0; k < att.length; k++) {
     const x = att[k], c = calls[k]; if (x.hive !== mine) continue;

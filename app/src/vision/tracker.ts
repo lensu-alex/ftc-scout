@@ -1,3 +1,4 @@
+import { iou } from "./detector";
 import type { Box, Frame } from "./frame";
 import type { Detection } from "./detector";
 
@@ -91,8 +92,12 @@ export class RobotTracker {
       if (tr.hits >= 2) tr.confirmed = true;
       tr.path.push({ t, x: cx, y: d.y + d.h, s: Math.max(d.w, d.h) });
     }
+    const updated = this.tracks.filter(tr => tr.lastSeen === t);
     robots.forEach((d, i) => {
       if (usedD.has(i)) return;
+      // a second box on a robot that already has its track this frame would start a duplicate track
+      // (two pieces following one robot, which later confuses who is who)
+      if (updated.some(tr => iou(tr.box, d) > 0.45)) return;
       // at most 4 robots on the field: a weak extra detection doesn't start a robot
       const active = this.tracks.filter(tr => tr.confirmed && t - tr.lastSeen <= this.maxAge).length;
       if (active >= 4 && d.score < 0.6) return;

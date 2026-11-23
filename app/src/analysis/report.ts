@@ -71,13 +71,15 @@ export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSe
   if (calls && attribution) {
     const t = { sure: 0, unsure: 0, volleys: 0 }, p = { sure: 0, unsure: 0, volleys: 0 };
     attribution.forEach((x, i) => {
-      if (x.hive !== mine || x.robot === null) return;
-      const c = calls[i]; if (!c?.who) return;
-      const bucket = c.who === "team" ? t : p; bucket.volleys++;
-      const sure = c.margin >= 0.5 && x.confidence >= 0.6;
-      if (sure) bucket.sure += x.balls; else bucket.unsure += x.balls;
+      if (x.hive !== mine) return;
+      const c = calls[i];
+      const sure = !!c?.who && c.margin >= 0.5 && x.confidence >= 0.6;
       const v = volleys.find(v => v.hive === x.hive && Math.abs(v.t - x.t) < 0.05);
-      if (v) { v.who = c.who; v.sure = sure; }
+      if (v) { v.who = c?.who ?? null; v.sure = sure; }
+      // sure volleys count for their robot; every other volley is possible for both
+      if (sure && c!.who === "team") { t.sure += x.balls; t.volleys++; }
+      else if (sure && c!.who === "partner") { p.sure += x.balls; p.volleys++; }
+      else { t.unsure += x.balls; p.unsure += x.balls; if (c?.who === "team") t.volleys++; else if (c?.who === "partner") p.volleys++; }
     });
     team = t; partner = p;
   }

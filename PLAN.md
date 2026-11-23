@@ -524,3 +524,11 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   1080p, 16/20 and 31/38 volleys attributed, ~2.5 min. Alliance pollen Q-14 blue 34 (4 tips), Q-18 blue 38 (7 tips).
   Suspicious: the team gets only its first 3-5 volleys, the partner all later ones, in both matches — the team's
   identified pieces are early ones and later pieces look "partner" by appearance. Investigating with a 1080p Q-18 clip.
+- Team vs partner, settled order: (1) the shooter's track piece's chain when sure; (2) "one place at a time": when a
+  surely-team piece is on screen elsewhere at the shot, the shooter is the partner (and vice versa) — this
+  resolved Q1 to team 22 sure + 5 possible, partner 15; (3) looks only when very clear (≥ 0.15): the 128 px
+  embeddings lean to whichever side has more or later crops (Q-18: every dark-robot volley came out "partner").
+  Measured and dropped: burst-crop references (polluted by swapped long tracks), 2-means clustering of shot looks
+  (collapses). Unresolved volleys count as possible for both robots: the page shows sure–possible.
+- Tracker: a detection overlapping (IoU > 0.45) a track already updated this frame no longer starts a duplicate
+  track (ground-truth tracking unchanged at 95% / 85%; Q1 10 pieces instead of 13).

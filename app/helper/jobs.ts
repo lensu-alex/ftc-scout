@@ -74,7 +74,10 @@ function scoringFor(job: Job, key: string, alliance: "Red" | "Blue", a?: MatchAn
   let calls: TeamCall[] | null = null;
   if (a && attribution && pieces && looks && identity) {
     const seed = identity.trackIds ?? (identity.trackId != null ? [identity.trackId] : []);
-    if (seed.length) calls = callVolleys(attribution, referenceLooks(a.robots, seed, pieces), i => looks.look(i), splitAlliance(a, pieces, seed), seed);
+    if (seed.length) {
+      const spans = a.robots.map(r => ({ id: r.id, from: r.path[0].t - a.start, to: r.path[r.path.length - 1].t - a.start }));
+      calls = callVolleys(attribution, referenceLooks(a.robots, seed, pieces), i => looks.look(i), splitAlliance(a, pieces, seed), seed, spans);
+    }
   }
   return { alliance, attribution, alliancePieces: pieces, calls };
 }

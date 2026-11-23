@@ -62,19 +62,29 @@ export function overlappingPieces(robots: { id: number; path: { t: number }[] }[
  * the shooter's look at the shot breaks ties when the chain is unsure (the looks alone proved too weak to lead:
  * the 128 px embeddings of blurred robots drift with background and distance); both unsure → a weak look call.
  */
-export function callVolleys(att: Attribution[], looks: Looks, shotLook: (i: number) => Float32Array | null, chain: { team: number[]; partner: number[]; unsure: number[] }, seed: number[] = []): TeamCall[] {
+export function callVolleys(att: Attribution[], looks: Looks, shotLook: (i: number) => Float32Array | null, chain: { team: number[]; partner: number[]; unsure: number[] }, seed: number[] = [],
+  spans: { id: number; from: number; to: number }[] = []): TeamCall[] {
+  // a robot is in one place: when a surely-team piece is on screen elsewhere at the shot, the shooter is the partner
+  const sureTeam = chain.team.filter(id => !chain.unsure.includes(id)), surePartner = chain.partner.filter(id => !chain.unsure.includes(id));
+  const alive = (ids: number[], t: number, not: number) => spans.some(p => ids.includes(p.id) && p.id !== not && p.from <= t && p.to >= t);
   return att.map((a, i) => {
     // the identified piece itself is the team by definition
     if (a.robot !== null && seed.includes(a.robot)) return { volley: i, who: "team" as const, margin: 1, byLook: null, byChain: "team" as const };
-    const byChain: "team" | "partner" | null = a.robot === null ? null : chain.unsure.includes(a.robot) ? null : chain.team.includes(a.robot) ? "team" : chain.partner.includes(a.robot) ? "partner" : null;
+    let byChain: "team" | "partner" | null = a.robot === null ? null : chain.unsure.includes(a.robot) ? null : chain.team.includes(a.robot) ? "team" : chain.partner.includes(a.robot) ? "partner" : null;
+    if (byChain === null && a.robot !== null && spans.length) {
+      const teamElsewhere = alive(sureTeam, a.t - 0.8, a.robot), partnerElsewhere = alive(surePartner, a.t - 0.8, a.robot);
+      if (teamElsewhere && !partnerElsewhere) byChain = "partner";
+      else if (partnerElsewhere && !teamElsewhere) byChain = "team";
+    }
     const e = shotLook(i);
     let byLook: number | null = null;
     if (e && looks.team.length && looks.partner.length) byLook = nearest(e, looks.team) - nearest(e, looks.partner);
     else if (e && looks.team.length) byLook = nearest(e, looks.team) - 0.8;      // no partner look: is it the team or not?
     let who: "team" | "partner" | null = null, margin = 0;
     if (byChain) { who = byChain; margin = 0.6; }
-    else if (byLook !== null && Math.abs(byLook) >= 0.06) { who = byLook > 0 ? "team" : "partner"; margin = Math.min(0.45, Math.abs(byLook)); }
-    else if (byLook !== null) { who = byLook > 0 ? "team" : "partner"; margin = 0.2; }
+    // looks only when they are very clear: the embeddings lean towards whichever side has more / later crops,
+    // so a small difference means nothing (Q-18: every volley of the dark robot came out "partner" by looks)
+    else if (byLook !== null && Math.abs(byLook) >= 0.15) { who = byLook > 0 ? "team" : "partner"; margin = 0.4; }
     return { volley: i, who, margin, byLook, byChain };
   });
 }
