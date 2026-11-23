@@ -8,8 +8,8 @@ import type { TeamCall } from "./whoShot";
 /** Pollen read at the hive: per alliance, and per robot when the 1080p pass could tell who shot. */
 export interface Scoring {
   hive: Record<"red" | "blue", { balls: number; volleys: number; tips: number }>;
-  /** every volley: when, which hive, how many balls, which robot track (null = couldn't tell), how sure */
-  volleys: { t: number; hive: "red" | "blue"; balls: number; robot: number | null; confidence: number }[];
+  /** every volley: when, which hive, how many balls, which robot track (null = couldn't tell), how sure, and whose */
+  volleys: { t: number; hive: "red" | "blue"; balls: number; robot: number | null; confidence: number; who?: "team" | "partner" | "other" | null; sure?: boolean }[];
   /** the scouted team's robot: balls from volleys attributed to its tracks */
   team: { sure: number; unsure: number; volleys: number } | null;
   /** its alliance partner (the other robot of the team's alliance) */
@@ -47,7 +47,7 @@ export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSe
   const teamTracks = split.team;
   const hive = { red: { balls: 0, volleys: 0, tips: 0 }, blue: { balls: 0, volleys: 0, tips: 0 } };
   for (const e of a.hiveEvents) { if (e.kind === "tip") hive[e.hive].tips++; else { hive[e.hive].volleys++; hive[e.hive].balls += e.balls ?? 0; } }
-  const volleys = a.hiveEvents.filter(e => e.kind === "scored").map(e => {
+  const volleys: Scoring["volleys"] = a.hiveEvents.filter(e => e.kind === "scored").map(e => {
     const at = attribution?.find(x => x.hive === e.hive && Math.abs(x.t - e.t) < 0.05);
     return { t: +e.t.toFixed(2), hive: e.hive, balls: e.balls ?? 0, robot: at?.robot ?? null, confidence: at ? +at.confidence.toFixed(2) : 0 };
   });
@@ -61,13 +61,23 @@ export function scoringOf(a: MatchAnalysis, teamAlliance: "Red" | "Blue", teamSe
   let team = attribution && teamTracks.length ? sum(v => teamTracks.includes(v.robot!)) : null;
   let partner = attribution && teamTracks.length ? sum(v => split.partner.includes(v.robot!)) : null;
   // when the shot-moment calls exist (looks + chain), they decide instead of the chain alone
+  // whose volley is each one (for the timeline on the page)
+  for (const v of volleys) {
+    if (v.hive !== mine) { v.who = "other"; continue; }
+    if (v.robot === null) { v.who = null; continue; }
+    v.who = teamTracks.includes(v.robot) ? "team" : split.partner.includes(v.robot) ? "partner" : null;
+    v.sure = v.confidence >= 0.6 && !split.unsure.includes(v.robot);
+  }
   if (calls && attribution) {
     const t = { sure: 0, unsure: 0, volleys: 0 }, p = { sure: 0, unsure: 0, volleys: 0 };
     attribution.forEach((x, i) => {
       if (x.hive !== mine || x.robot === null) return;
       const c = calls[i]; if (!c?.who) return;
       const bucket = c.who === "team" ? t : p; bucket.volleys++;
-      if (c.margin >= 0.5 && x.confidence >= 0.6) bucket.sure += x.balls; else bucket.unsure += x.balls;
+      const sure = c.margin >= 0.5 && x.confidence >= 0.6;
+      if (sure) bucket.sure += x.balls; else bucket.unsure += x.balls;
+      const v = volleys.find(v => v.hive === x.hive && Math.abs(v.t - x.t) < 0.05);
+      if (v) { v.who = c.who; v.sure = sure; }
     });
     team = t; partner = p;
   }

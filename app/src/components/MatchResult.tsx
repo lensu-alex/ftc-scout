@@ -29,6 +29,20 @@ export function MatchResult({ match, report: a, youtube }: { match: TeamMatch; r
           <Fact label="Team robot" value={a.confirmed ? (a.team ? "your choice" : "left out by you") : !a.team ? "not found" : `app's guess (${pct(a.team.confidence)})`} />
         )}
       </div>
+      {a.scoring && a.scoring.volleys.length > 0 && (
+        <div className="volleys">
+          <h4>Pollen at the hive</h4>
+          <div className="volley-row">
+            {a.scoring.volleys.map((v, i) => {
+              const cls = v.who === "team" ? (v.sure ? "team" : "team unsure") : v.who === "partner" ? (v.sure ? "partner" : "partner unsure") : v.who === "other" ? "other" : "unknown";
+              const label = v.who === "team" ? "your team" : v.who === "partner" ? "partner" : v.who === "other" ? "other alliance" : "unsure who";
+              const m = Math.floor(v.t / 60), sec = Math.round(v.t % 60);
+              return <span key={i} className={`volley ${cls}`} title={`${m}:${String(sec).padStart(2, "0")} · ${v.balls} ball${v.balls === 1 ? "" : "s"} · ${label}${v.sure === false ? " (unsure)" : ""}`}>{v.balls}</span>;
+            })}
+          </div>
+          <div className="muted small">Each box is one volley (number = balls scored). Green = your team, blue = partner, grey = other alliance, dashed = unsure.</div>
+        </div>
+      )}
       <div className="views">
         {a.views.map(v => (
           <figure key={v.id} className={v.id === a.mainView ? "main" : ""}>
