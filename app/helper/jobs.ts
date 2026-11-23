@@ -94,7 +94,6 @@ async function attributeMatch(url1080: string, height: number, m: TeamMatch, sta
   const SC = FW / 1280;
   const hive = a.hives.find(h => h.view === a.mainView)?.boxes ?? a.hives[0]?.boxes;
   const exclude = hive ? [hive.red, hive.blue].map(b => ({ x: b.x * SC, y: b.y * SC, w: b.w * SC, h: b.h * SC * 0.6 })) : [];
-  const ev = new LaunchEvidence(exclude);
   const robotsAt = (t: number): RobotBoxAt[] => a.robots.flatMap(r => {
     let best = r.path[0];
     for (const p of r.path) if (Math.abs(p.t - (start + t)) < Math.abs(best.t - (start + t))) best = p;
@@ -102,21 +101,30 @@ async function attributeMatch(url1080: string, height: number, m: TeamMatch, sta
     const s = best.s * SC;
     return [{ id: r.id, box: { x: best.x * SC - s / 2, y: best.y * SC - 0.9 * s, w: s, h: 0.9 * s } }];
   });
-  let got = 0;
-  const kept: { frame: Frame; robots: RobotBoxAt[] }[][] = [];
-  for (const e of volleys) {
-    if (signal.aborted) return null;
-    let robots: RobotBoxAt[] = [], n = 0; const keep: (typeof kept)[number] = [];
-    try {
-      for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: FW, h: FH })) {
-        robots = robotsAt(t - start); ev.push(t - start, frame, robots);
-        if (n % 16 === 8) keep.push({ frame, robots });
-        n++;
-      }
-    } catch { /* a burst that fails is just unsure */ }
-    ev.flush(robots); kept.push(keep);
-    if (n >= 20) got++;
-  }
+  // bursts are fetched 3 at a time (each is its own short ffmpeg read of the stream); every burst gets its
+  // own evidence tracker, and their samples and launches are merged afterwards
+  const kept: { frame: Frame; robots: RobotBoxAt[] }[][] = volleys.map(() => []);
+  const parts: LaunchEvidence[] = volleys.map(() => new LaunchEvidence(exclude));
+  const counts: number[] = volleys.map(() => 0);
+  let next = 0;
+  const worker = async () => {
+    while (next < volleys.length && !signal.aborted) {
+      const k = next++, e = volleys[k], ev = parts[k];
+      let robots: RobotBoxAt[] = [], n = 0;
+      try {
+        for await (const { t, frame } of readFrames(url1080, 30, start + e.t - 1.8, 1.6, { w: FW, h: FH })) {
+          robots = robotsAt(t - start); ev.push(t - start, frame, robots);
+          if (n % 16 === 8) kept[k].push({ frame, robots });
+          n++;
+        }
+      } catch { /* a burst that fails is just unsure */ }
+      ev.flush(robots); counts[k] = n;
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  if (signal.aborted) return null;
+  const got = counts.filter(n => n >= 20).length;
+  const ev = { samples: parts.flatMap(p => p.samples).sort((a, b) => a.t - b.t), launches: parts.flatMap(p => p.launches).sort((a, b) => a.t - b.t) };
   if (!got) { say(`${m.description}: no video for the launch pass`); return null; }
   const groups = robotGroups(a, m.alliance), ga = groupAlliances(a, groups, m.alliance);
   const trackAlliance = new Map<number, "red" | "blue" | null>();
