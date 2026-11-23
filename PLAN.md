@@ -498,3 +498,8 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
   only when looks are close. Offline: Q5 team 22 sure, partner 13, of 35, nothing unsure; Q1 team 22 sure + 13
   unsure, partner 2 + 4 (two dark, similar robots side by side: looks are weak there). Plate reading stays an
   optional extra cue (user: don't rely on it). Wired into the helper (`scoringFor` → `callVolleys`).
+- Plate reading tried (`scripts/_plates.ts`, Tesseract on 4x-upscaled 1080p robot crops, digits only): reads nothing
+  usable (one stray "3" in 20 crops) although the plates are legible by eye. Would need its own small digit model
+  trained on plate crops; parked as an optional cue, as agreed, not relied on.
+- Live helper retest after the day's changes is blocked: YouTube asks this computer to sign in ("not a bot") after
+  the many fetches today. Retry later; the offline two-pass eval on the local clips exercises the same code.
