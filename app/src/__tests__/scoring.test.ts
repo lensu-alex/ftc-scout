@@ -70,6 +70,18 @@ describe("splitAlliance", () => {
 });
 
 describe("callVolleys", () => {
+  it("one place at a time: a shooter not in a sure chain is the partner when the team is seen elsewhere", () => {
+    const att = [{ t: 30, hive: "blue" as const, balls: 2, robot: 9, confidence: 0.9, evidence: [] }];
+    const spans = [{ id: 1, from: 0, to: 60 }, { id: 9, from: 25, to: 40 }];
+    const calls = callVolleys(att, { team: [], partner: [] }, () => null, { team: [1], partner: [], unsure: [] }, [1], spans);
+    expect(calls[0].who).toBe("partner");
+    expect(calls[0].margin).toBeGreaterThanOrEqual(0.5);
+  });
+  it("leaves a volley open when neither robot is seen elsewhere and looks are weak", () => {
+    const att = [{ t: 30, hive: "blue" as const, balls: 2, robot: 9, confidence: 0.9, evidence: [] }];
+    const calls = callVolleys(att, { team: [new Float32Array([1, 0])], partner: [new Float32Array([0.9, 0.1])] }, () => new Float32Array([0.95, 0.05]), { team: [], partner: [], unsure: [9] }, [], [{ id: 9, from: 25, to: 40 }]);
+    expect(calls[0].who).toBeNull();
+  });
   it("uses looks when they are clear, the chain otherwise", () => {
     const att = [
       { t: 10, hive: "blue" as const, balls: 2, robot: 7, confidence: 0.9, evidence: [] },
