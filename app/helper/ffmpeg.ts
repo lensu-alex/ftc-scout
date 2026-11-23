@@ -23,19 +23,20 @@ export function grabAt(src: string, t: number, timeoutMs = 30000): Promise<Frame
   });
 }
 
-export async function* readFrames(src: string, fps: number, start = 0, dur?: number): AsyncGenerator<{ t: number; frame: Frame }> {
+export async function* readFrames(src: string, fps: number, start = 0, dur?: number, size: { w: number; h: number } = { w: W, h: H }): AsyncGenerator<{ t: number; frame: Frame }> {
   const args = ["-loglevel", "error", "-ss", String(start), "-i", src, ...(dur ? ["-t", String(dur)] : []),
-    "-vf", `fps=${fps},scale=${W}:${H}`, "-f", "rawvideo", "-pix_fmt", "rgba", "-"];
+    "-vf", `fps=${fps},scale=${size.w}:${size.h}`, "-f", "rawvideo", "-pix_fmt", "rgba", "-"];
   const p = spawn(ffmpegPath(), args);
-  const size = W * H * 4;
+  const { w: FW, h: FH } = size;
+  const size_ = FW * FH * 4;
   let buf = Buffer.alloc(0), i = 0;
   try {
     for await (const chunk of p.stdout) {
       buf = Buffer.concat([buf, chunk]);
-      while (buf.length >= size) {
-        const data = new Uint8ClampedArray(buf.subarray(0, size));
-        buf = buf.subarray(size);
-        yield { t: start + i++ / fps, frame: { width: W, height: H, data } };
+      while (buf.length >= size_) {
+        const data = new Uint8ClampedArray(buf.subarray(0, size_));
+        buf = buf.subarray(size_);
+        yield { t: start + i++ / fps, frame: { width: FW, height: FH, data } };
       }
     }
   } finally {

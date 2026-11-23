@@ -474,3 +474,7 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
 - Next build (pass 2 in the helper): fetch 1080p (format 137) bursts of 1.6 s before each hive volley, run the
   above-robot evidence + flight tracker on them, fuse per volley with the alliance constraint; show per-team
   scored = sure + unsure; read plates from the same 1080p bursts.
+- App port done (`vision/launchEvidence.ts`, `analysis/attribution.ts`, `helper/ffmpeg.ts` reads any size,
+  `helper/youtube.ts` resolves 1080p (format 137) on request, `scripts/eval-pass2.ts`): Q1 → 30 of 38 volleys with a
+  clear shooter, pass 1 40 s + pass 2 47 s on the M5. Not yet wired into the helper jobs; alliance per track and the
+  hive boxes are still given by hand.

@@ -17,20 +17,22 @@ function ytdlp(): Promise<string> {
 const cache = new Map<string, { at: number; v: { url: string; duration: number; title: string } }>();
 const KEEP_MS = 4 * 3600 * 1000;
 
-export async function resolveStream(id: string, fresh = false): Promise<{ url: string; duration: number; title: string }> {
-  const hit = fresh ? undefined : cache.get(id);
+/** height 720 (default, pass 1) or 1080 (short bursts for launch attribution; most streams have it). */
+export async function resolveStream(id: string, fresh = false, height: 720 | 1080 = 720): Promise<{ url: string; duration: number; title: string }> {
+  const key = `${id}@${height}`;
+  const hit = fresh ? undefined : cache.get(key);
   if (hit && Date.now() - hit.at < KEEP_MS) return hit.v;
   const bin = await ytdlp();
   // optional, off by default: use the YouTube login of the user's own browser (reads its cookies)
   const browser = process.env.FTC_YT_BROWSER;
   const out = await new Promise<string>((res, rej) => execFile(bin,
     ["-q", "--no-warnings", ...(browser ? ["--cookies-from-browser", browser] : []),
-      "-f", "136/22/bv*[height<=720]/b[height<=720]", "--print", "duration", "--print", "title", "--print", "urls",
+      "-f", height === 1080 ? "137/bv*[height<=1080][ext=mp4]/136/bv*[height<=720]" : "136/22/bv*[height<=720]/b[height<=720]", "--print", "duration", "--print", "title", "--print", "urls",
       `https://www.youtube.com/watch?v=${id}`], { timeout: 90000 },
     (err, stdout, stderr) => err ? rej(new Error(friendly(stderr.trim().split("\n").pop() || err.message))) : res(stdout)));
   const [duration, title, url] = out.trim().split("\n");
   const v = { url, duration: +duration, title };
-  cache.set(id, { at: Date.now(), v });
+  cache.set(key, { at: Date.now(), v });
   return v;
 }
 
