@@ -520,3 +520,7 @@ Track identities read from plates: 12808 = track 1 until ~39 s, then track 6 (39
 - Live retest still blocked (2026-11-24): `--print duration` works again but resolving media links still hits the
   "not a bot" check, also with `--js-runtimes node` (yt-dlp 2026.10.26 wants a JS runtime; Node is accepted, no
   deno needed). The block is on the player API for this IP; it should clear with time.
+- Live retest done (2026-11-24, YouTube open again): job for 12808, Q-14 and Q-18 from the stream, launch pass at
+  1080p, 16/20 and 31/38 volleys attributed, ~2.5 min. Alliance pollen Q-14 blue 34 (4 tips), Q-18 blue 38 (7 tips).
+  Suspicious: the team gets only its first 3-5 volleys, the partner all later ones, in both matches — the team's
+  identified pieces are early ones and later pieces look "partner" by appearance. Investigating with a 1080p Q-18 clip.
