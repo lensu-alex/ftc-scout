@@ -1,6 +1,6 @@
 # Handoff
 
-_Last updated 2026-11-24 evening by Claude on the Linux laptop._
+_Last updated 2026-11-24 evening on the Linux laptop._
 
 ## Mac: do this first
 History on GitHub was rewritten on 2026-11-24 (owner's request: only `lensu-alex` as author, no Claude
@@ -36,13 +36,14 @@ once (turns off Claude attribution, sets git identity to the noreply address).
   (lightweight rule, PLAN §0.1).
 
 ## Machines
-- Linux laptop (`omarchy`): Tailscale `100.79.183.64`, project at `~/Projects/ftc-scout`. Has: tools/clips (all),
-  tools/clips1080 (partial), tools/.venv (CUDA). Missing: tools/models, tools/gt/*, tools/frames, tools/dataset.
+- Linux laptop (`omarchy`): Tailscale `100.79.183.64`, project at `~/Projects/ftc-scout`. Has all `.sync-data`
+  folders + tools/dataset (pulled from the Mac 2026-11-24) and tools/.venv (CUDA). Not here: tools/runs, tools/debug.
 - Mac (`lensus-macbook-air`, Tailscale `100.102.240.7`): project at `~/Developer/ftc-scout`, has all the data.
 
 ## Next
-1. With the Mac awake: on Linux `proj data pull` (missing .sync-data folders), and `proj data pull tools/dataset`
-   (1.9 GB) before training on the GPU: `cd tools && FTC_BATCH=16 .venv/bin/python train.py <name> <base.pt> 640`.
+1. GPU training is ready on Linux: `cd tools && FTC_DATA=dataset/yolo5 .venv/bin/python train.py <name> yolo11n.pt 640`
+   (~15 s/epoch on 1,457 images, so ~30 min for 120 epochs). train.py rewrites the Mac paths in data.yaml on the fly.
+   New weights the Mac needs: `proj data push tools/runs/<name>` and note it here.
 2. Open vision items (PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
    ~15% of volleys stay possible-for-both robots; clear-shooter margins are fragile (see table).
 3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).

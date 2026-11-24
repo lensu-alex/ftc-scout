@@ -19,8 +19,20 @@ STREAM_AUG = [
 ]
 name, base, imgsz = sys.argv[1], sys.argv[2], int(sys.argv[3])
 epochs = int(sys.argv[4]) if len(sys.argv) > 4 else 120
+def portable_yaml(folder):
+    """data.yaml files carry the absolute path of the machine that made them; point them at their own folder."""
+    yml = os.path.join(folder, "data.yaml")
+    lines = open(yml).read().splitlines()
+    fixed = [f"path: {os.path.abspath(folder)}" if l.startswith("path:") else l for l in lines]
+    if fixed == lines:
+        return yml
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs", f"{os.path.basename(os.path.normpath(folder))}.data.yaml")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    open(out, "w").write("\n".join(fixed) + "\n")
+    return out
+
 YOLO(base).train(
-    data=os.environ.get("FTC_DATA", "dataset/yolo") + "/data.yaml", imgsz=imgsz, epochs=epochs, batch=int(os.environ.get("FTC_BATCH", 16)), device=DEVICE,
+    data=portable_yaml(os.environ.get("FTC_DATA", "dataset/yolo")), imgsz=imgsz, epochs=epochs, batch=int(os.environ.get("FTC_BATCH", 16)), device=DEVICE,
     project=os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs"), name=name, exist_ok=True, patience=40, plots=False, verbose=False,
     hsv_h=0.005, hsv_s=0.6, hsv_v=0.45, degrees=0, translate=0.1, scale=0.5, fliplr=0.5,
     mosaic=1.0, mixup=0.1, close_mosaic=10, cos_lr=True, workers=8, cache="ram", augmentations=STREAM_AUG,
