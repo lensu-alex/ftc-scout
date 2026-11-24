@@ -1,6 +1,6 @@
 # Handoff
 
-_Last updated 2026-11-24 by Claude on the Linux laptop._
+_Last updated 2026-11-24 by Claude on the Mac._
 
 ## State
 - Last vision work (Mac, 2026-11-23/24 overnight): hive counter robust across cameras, top-down disc mode,
@@ -15,14 +15,17 @@ _Last updated 2026-11-24 by Claude on the Linux laptop._
 
 ## Machines
 - Linux laptop: `lensu@192.168.1.106`, project at `~/Projects/ftc-scout`, no SSH server (needs sudo).
-- Mac: project at `~/Developer/ftc-scout`; user/IP: _to fill in_.
+- Mac: `lensu@192.168.1.102` (LAN IP, may change with DHCP; check `ipconfig getifaddr en0`), project at `~/Developer/ftc-scout`.
+  Remote Login is on. claude-sync installed 2026-11-24 (`paths.local` points ftc-scout at `~/Developer/ftc-scout`).
 
 ## Next
 1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac to-do** (for Claude on the Mac,
    after the owner switches on System Settings > General > Sharing > Remote Login):
    - trust the Linux laptop's key (it's the only key on the GitHub account, comment `lensu@omarchy`):
      `mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && curl -fsS https://github.com/lensu-alex.keys | grep -vxFf ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys`
-   - write the Mac's `whoami` and LAN IP (`ipconfig getifaddr en0`) here under "Machines", commit, push.
+   - write the Mac's `whoami` and LAN IP (`ipconfig getifaddr en0`) here under "Machines", commit, push. **Done.**
+   - **Still open:** the key step above isn't done yet (Claude's safety check blocked it; the owner runs it by hand).
+     Check with `grep -c . ~/.ssh/authorized_keys` on the Mac.
    Then on Linux: `tools/sync-data.sh pull <mac-user>@<mac-ip> Developer/ftc-scout`, run `check-all quick`,
    compare with the Mac baseline (should match: same code, same models).
 2. Open vision items (from PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
