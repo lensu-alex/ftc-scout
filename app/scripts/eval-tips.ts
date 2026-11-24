@@ -27,9 +27,9 @@ for (const name of Object.keys(truth)) {
     const n = want.auto + want.dc;
     tot.truth += n; tot.found += tips.length; tot.absErr += Math.abs(tips.length - n); tot.autoErr += Math.abs(auto - want.auto);
     const balls = ev.filter(e => e.kind === "scored").reduce((s, e) => s + (e.balls ?? 0), 0);
-    const sf = seesawFlips(r.samples), sAuto = sf.flips.filter(t => t <= AUTO_END).length;
+    const sf = seesawFlips(r.samples, r.mode === "area" ? { ballArea: r.ballArea, minBalls: 2 } : {}), sAuto = sf.flips.filter(t => t <= AUTO_END).length;
     tot.sFound += sf.flips.length; tot.sErr += Math.abs(sf.flips.length - n); tot.sAutoErr += Math.abs(sAuto - want.auto);
-    row.push(`${h} official ${n} (auto ${want.auto}) | area ${tips.length} (${auto}) | see-saw ${sf.flips.length} (${sAuto}) ${sf.kind} q${sf.quality.toFixed(2)}`.padEnd(70));
+    row.push(`${h} official ${n} (auto ${want.auto}) | area ${tips.length} (${auto}) | see-saw ${sf.flips.length} (${sAuto}) ${sf.kind} d'${sf.sep.toFixed(1)}`.padEnd(70));
     if (process.env.VERBOSE) console.log(`  ${name} ${h} [${r.mode}, ball ${Math.round(r.ballArea)} px]: ` + ev.map(e => `${e.kind === "tip" ? "TIP" : "+" + e.balls}@${e.t.toFixed(1)}`).join(" "));
   }
   console.log(`${name.padEnd(9)} ${row.join(" | ")}`);

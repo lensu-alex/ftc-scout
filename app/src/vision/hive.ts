@@ -188,46 +188,78 @@ export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6, mo
 
 /**
  * Hive tips from the see-saw itself: it rests in one of two positions and every tip flips it to the other.
- * Each sample carries two pictures of the see-saw (its tube colour on a 12x12 grid, its brightness on 16x16);
- * per picture kind the samples are split into two positions (2-means), and the kind that separates them more
- * cleanly is used (against a blue wall the blue tubes vanish; the black-and-white tag panel never does).
- * Samples close to neither position (a robot or person in front) are ignored; a position must hold `hold` s.
- * Returns the flip times, the stable stretches (which position, from, to) and how clean the split was (0..1).
+ * Each sample carries two pictures of the see-saw (its tube colour on a 12x12 grid, its brightness on 16x16).
+ * Per picture kind the smoothed samples are projected on their main direction of change (first principal
+ * component) and the line is split in two (Otsu); d' = gap / pooled spread says how cleanly. The kind with the
+ * larger d' wins (against a blue wall the blue tubes vanish; the black-and-white tag panel never does).
+ * Samples near the split are ignored (a robot or person in front); a position must hold `hold` s.
+ * (v1 seeded 2-means with the first second, which on some cameras is neither position: q10 blue found 0 of 5.)
+ * Returns the tip times (`flips`), every position change (`moves`), the stable stretches and d' (`sep`).
  */
-export function seesawFlips(samples: HiveSample[], hold = 1.2, ambiguous = 0.6) {
+export function seesawFlips(samples: HiveSample[], opts: { hold?: number; margin?: number; minSep?: number; ballArea?: number; minBalls?: number } = {}) {
+  const hold = opts.hold ?? 1.2, margin = opts.margin ?? 0.2, minSep = opts.minSep ?? 0;
+  type Run = { pos: 0 | 1; t0: number; t1: number };
   const S = samples.filter(s => s.shape && s.look && !s.hidden);
-  let best: { flips: number[]; runs: { pos: 0 | 1; t0: number; t1: number }[]; quality: number; kind: "shape" | "look" } | null = null;
-  if (S.length < 30) return { flips: [] as number[], runs: [] as { pos: 0 | 1; t0: number; t1: number }[], quality: 0, kind: "shape" as const };
+  const none = { flips: [] as number[], moves: [] as number[], runs: [] as Run[], quality: 0, sep: 0, kind: "shape" as "shape" | "look" };
+  if (S.length < 30) return none;
   const zs = (v: number[]) => { const m = v.reduce((a, b) => a + b, 0) / v.length, sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) + 1e-6; return v.map(x => (x - m) / sd); };
+  const found: (typeof none)[] = [];
   for (const kind of ["shape", "look"] as const) {
     const V = S.map(s => (kind === "shape" ? s.shape! : zs(s.look!)));
-    const D = V[0].length;
-    // median over 5 samples (~0.5 s)
+    const D = V[0].length, N = V.length;
     const Vs = V.map((_, i) => { const w = V.slice(Math.max(0, i - 2), i + 3); return Array.from({ length: D }, (_, d) => median(w.map(v => v[d]))); });
-    const dist = (a: number[], b: number[]) => { let s = 0; for (let d = 0; d < D; d++) s += (a[d] - b[d]) ** 2; return Math.sqrt(s); };
-    const mean = (vs: number[][]) => Array.from({ length: D }, (_, d) => vs.reduce((s, v) => s + v[d], 0) / Math.max(1, vs.length));
-    let a = mean(Vs.filter((_, i) => S[i].t < S[0].t + 1));
-    let b = Vs.reduce((far, v) => (dist(v, a) > dist(far, a) ? v : far), Vs[0]);
-    let lab: boolean[] = [];
-    for (let it = 0; it < 20; it++) {
-      lab = Vs.map(v => dist(v, a) < dist(v, b));
-      if (lab.every(x => x) || lab.every(x => !x)) break;
-      a = mean(Vs.filter((_, i) => lab[i])); b = mean(Vs.filter((_, i) => !lab[i]));
+    const mu = Array.from({ length: D }, (_, d) => Vs.reduce((s, v) => s + v[d], 0) / N);
+    const X = Vs.map(v => v.map((x, d) => x - mu[d]));
+    // PC1 by power iteration
+    let u = X.reduce((far, x) => (x.reduce((s, y) => s + y * y, 0) > far.reduce((s, y) => s + y * y, 0) ? x : far), X[0]).slice();
+    for (let it = 0; it < 30; it++) {
+      const nu = new Array(D).fill(0);
+      for (const x of X) { let p = 0; for (let d = 0; d < D; d++) p += x[d] * u[d]; for (let d = 0; d < D; d++) nu[d] += p * x[d]; }
+      const n = Math.sqrt(nu.reduce((s, y) => s + y * y, 0)) + 1e-12; u = nu.map(y => y / n);
     }
-    const da = Vs.map(v => dist(v, a)), db = Vs.map(v => dist(v, b));
-    const state = Vs.map((_, i) => (Math.min(da[i], db[i]) / Math.max(da[i], db[i], 1e-6) > ambiguous ? -1 : da[i] < db[i] ? 0 : 1));
-    const runs: { pos: 0 | 1; t0: number; t1: number }[] = [];
-    for (let i = 0; i < state.length; ) {
-      let j = i; while (j < state.length && state[j] === state[i]) j++;
+    const p = X.map(x => x.reduce((s, y, d) => s + y * u[d], 0));
+    // Otsu split on the line, each side at least `hold` seconds' worth of samples
+    const srt = [...p].sort((a, b) => a - b), minN = Math.max(5, Math.round((hold * N) / Math.max(1, S[N - 1].t - S[0].t)));
+    const pre = [0], pre2 = [0]; for (const x of srt) { pre.push(pre[pre.length - 1] + x); pre2.push(pre2[pre2.length - 1] + x * x); }
+    let bi = -1, bw = Infinity;
+    for (let i = minN; i <= N - minN; i++) {
+      const n0 = i, n1 = N - i, s0 = pre[i], s1 = pre[N] - pre[i];
+      const w = (pre2[i] - (s0 * s0) / n0) + (pre2[N] - pre2[i] - (s1 * s1) / n1);
+      if (w < bw) { bw = w; bi = i; }
+    }
+    if (bi < 0) continue;
+    const m0 = pre[bi] / bi, m1 = (pre[N] - pre[bi]) / (N - bi);
+    const v0 = pre2[bi] / bi - m0 * m0, v1 = (pre2[N] - pre2[bi]) / (N - bi) - m1 * m1;
+    const sep = (m1 - m0) / Math.sqrt(Math.max(1e-12, (v0 + v1) / 2));
+    const thr = (srt[bi - 1] + srt[bi]) / 2, gap = m1 - m0;
+    const state = p.map(x => (Math.abs(x - thr) < margin * gap ? -1 : x < thr ? 0 : 1));
+    const runs: Run[] = [];
+    for (let i = 0; i < N; ) {
+      let j = i; while (j < N && state[j] === state[i]) j++;
       if (state[i] >= 0 && S[j - 1].t - S[i].t >= hold) {
         const last = runs[runs.length - 1];
         if (last && last.pos === state[i]) last.t1 = S[j - 1].t; else runs.push({ pos: state[i] as 0 | 1, t0: S[i].t, t1: S[j - 1].t });
       }
       i = j;
     }
-    const quality = da.reduce((s, x, i) => s + (Math.max(x, db[i]) - Math.min(x, db[i])) / Math.max(x, db[i], 1e-6), 0) / da.length;
+    const quality = state.filter(s => s >= 0).length / N;
     const flips = runs.slice(1).map((r, k) => (runs[k].t1 + r.t0) / 2);
-    if (!best || quality > best.quality) best = { flips, runs, quality, kind };
+    found.push({ flips, moves: flips, runs, quality, sep, kind });
   }
-  return best!;
+  const best = found.length ? found.reduce((a, b) => (b.sep > a.sep ? b : a)) : null;
+  if (!best || best.sep < minSep) return { ...none, sep: best?.sep ?? 0, kind: best?.kind ?? "shape" };
+  // a see-saw only tips under load: with ballArea given (side cameras), a flip counts only if the cell held
+  // >= minBalls balls' worth of yellow (1 s median) in the 3 s before it or while it moved: people and robots
+  // behind or in front of it change its look too (Alabama Q4: 8 'flips' on a hive that never tipped).
+  // Not for cameras looking down: there the load is mostly nectar, which is not yellow.
+  if (opts.ballArea && opts.minBalls) {
+    const A = samples.filter(s => !s.hidden), b = best;
+    const flips = b.runs.slice(1).flatMap((r, k) => {
+      const w = A.filter(s => s.t >= b.runs[k].t1 - 3 && s.t <= r.t0 + 1);
+      const peak = Math.max(0, ...w.map((_, i) => median(w.slice(Math.max(0, i - 5), i + 6).map(s => s.area))));
+      return peak >= opts.minBalls! * opts.ballArea! ? [(b.runs[k].t1 + r.t0) / 2] : [];
+    });
+    return { ...b, flips };
+  }
+  return best;
 }

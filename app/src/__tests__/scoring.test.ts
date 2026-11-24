@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hiveEvents, type HiveSample } from "../vision/hive";
+import { hiveEvents, seesawFlips, type HiveSample } from "../vision/hive";
 import { attributeVolleys } from "../analysis/attribution";
 import { splitAlliance } from "../analysis/pieces";
 import { callVolleys } from "../analysis/whoShot";
@@ -98,5 +98,30 @@ describe("callVolleys", () => {
     const calls = callVolleys(att, { team, partner }, look, { team: [], partner: [8], unsure: [] });
     expect(calls[0].who).toBe("team");
     expect(calls[1].who).toBe("partner");
+  });
+});
+
+describe("seesawFlips", () => {
+  // two resting positions = two looks of the see-saw; `loaded` = balls in the cell before each change
+  const rng = (() => { let x = 7; return () => ((x = (x * 16807) % 2147483647) / 2147483647); })();
+  const look = (pos: number) => Array.from({ length: 256 }, (_, d) => (d < 128 ? 80 : 160) + (pos ? (d % 16 < 8 ? 60 : -60) : 0) + 10 * rng());
+  const shape = (pos: number) => Array.from({ length: 144 }, (_, d) => ((pos ? d % 12 < 6 : d % 12 >= 6) ? 0.5 : 0.05) + 0.05 * rng());
+  const run = (segs: [number, number, number][]) => {   // [until s, position, yellow area]
+    const out: HiveSample[] = []; let t = 0;
+    for (const [until, pos, area] of segs) for (; t < until; t += 0.1) out.push({ t: +t.toFixed(1), area, bumps: 0, look: look(pos), shape: shape(pos) });
+    return out;
+  };
+  it("counts each change of position as a tip", () => {
+    const s = run([[20, 0, 400], [50, 1, 500], [80, 0, 450], [100, 1, 0]]);
+    expect(seesawFlips(s).flips.map(t => Math.round(t))).toEqual([20, 50, 80]);
+  });
+  it("seeds from neither position: a different look in the first seconds does not hide the flips", () => {
+    const s = run([[3, 0, 0], [40, 1, 400], [80, 0, 400], [100, 1, 0]]).map(x => (x.t < 3 ? { ...x, look: x.look!.map(v => v * 0.5), shape: x.shape!.map(() => 0.3) } : x));
+    expect(seesawFlips(s).flips.length).toBeGreaterThanOrEqual(2);
+  });
+  it("with the ball area given, a change with an empty cell is not a tip (someone moved behind it)", () => {
+    const s = run([[30, 0, 0], [60, 1, 50], [70, 0, 50], [90, 0, 400], [100, 1, 0]]);
+    expect(seesawFlips(s).flips).toHaveLength(3);
+    expect(seesawFlips(s, { ballArea: 100, minBalls: 2 }).flips.map(t => Math.round(t))).toEqual([90]);
   });
 });

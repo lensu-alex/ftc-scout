@@ -143,6 +143,28 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   many "launches". Orange excluded from streaks (Q18 still ~8/12 real). Open: require the smear to leave the
   robot's box over 2+ frames, or learn a tiny streak classifier from the hand-checked strips.
 
+**2026-11-25 (night, Mac, owner asleep): see-saw tips on all 11 clips**
+- Mac baseline (all 11 cached with `cache-all.sh`, ~2 min per match after a slow first one): area counter found 45
+  of 59 official tips, |error| 18 (auto 5); see-saw v1 |error| 22 (auto 3). On the 8 Linux matches the Mac gives
+  the same numbers as Linux (|error| 9). The 3 new clips broke v1: Alabama Q4 red +8 and blue +2 (the camera looks
+  at the hive from the front: people stand and move right behind the red see-saw, robots park in front),
+  Iowa Q10 red +2 / blue -1, both top-down.
+- q10 blue 0/5 cause: v1 seeded its 2-means with the first second, which on that camera is a third look (pre-start)
+  and the two real positions ended up "ambiguous". Fix: project the smoothed pictures on their first principal
+  component and split that line (Otsu); score d' = gap / pooled spread; the kind with the larger d' wins.
+  q10 blue 0 → 5/5, the rest unchanged: |error| 22 → 19.
+- d' does not tell a hive that never tipped: nlron blue (0 official tips) has d' 20, the cleanest split of all.
+  Something real changes there (people, robots, the sign), just not a tip. Requiring both pictures to flip
+  together: no (or1 blue, or18 blue and micoq21 blue are right in one picture only). Dead end.
+- **A see-saw only tips under load.** Per flip, the yellow in the cell (1 s median, the 3 s before and during
+  the move): on side cameras all clean-hive flips had >= 2.2 balls' worth except the auto ones still filling,
+  which still peak >= 2.6; false ones <= 1.8 except nlron (far, high camera: 2.3 and 2.7). Rule: on side
+  cameras (area mode) a flip counts only at >= 2 balls. **Fitted on the same 11 clips it is scored on**; 1.5 / 2 /
+  2.5 give |error| 8 / 6 / 6, so not knife-edge. Not applied to top-down cameras (the load there is mostly nectar).
+- Result: see-saw |error| 22 → **6** (auto 3 → 1), area counter 18. 61 found for 59 official. Left: or9 red -1
+  (a tip at the buzzer: the see-saw starts moving at 157.5 s and the samples end at 160 before it settles),
+  nlron red +1 / blue +1, micoq blue +1, iadaim10 red +1 / blue -1 (top-down and far cameras).
+
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
 The pipeline must stay as light as possible, so it runs on old laptops and phones:
