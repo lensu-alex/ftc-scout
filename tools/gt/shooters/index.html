@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Who shot it? · ftc-scout labels</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #111; color: #eee; font: 15px/1.4 -apple-system, system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: #1b1b1b; border-bottom: 1px solid #333; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  #progress { margin-left: auto; color: #aaa; }
+  main { max-width: 1280px; margin: 0 auto; padding: 12px 16px; }
+  #task { font-size: 17px; margin: 4px 0 10px; }
+  .hive { font-weight: 700; padding: 1px 8px; border-radius: 4px; }
+  .hive.red { background: #c62828; } .hive.blue { background: #1565c0; }
+  #stage { position: relative; cursor: crosshair; line-height: 0; display: table; margin: 0 auto; }
+  video { display: block; max-width: 100%; max-height: calc(100vh - 250px); width: auto; background: #000; border-radius: 6px; }
+  #mark { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 3px solid #ffeb3b; border-radius: 50%;
+          box-shadow: 0 0 0 2px #000; pointer-events: none; display: none; }
+  #bar { height: 6px; background: #333; border-radius: 3px; margin: 8px 0 4px; position: relative; }
+  #bar > div { position: absolute; top: 0; bottom: 0; background: #888; border-radius: 3px; }
+  #arrive { position: absolute; top: -4px; width: 2px; height: 14px; background: #ffeb3b; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  button { background: #2a2a2a; color: #eee; border: 1px solid #444; border-radius: 6px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  button:hover { background: #353535; }
+  button.primary { background: #2e7d32; border-color: #2e7d32; }
+  button.primary:disabled { background: #2a2a2a; border-color: #444; color: #777; cursor: default; }
+  .help { color: #999; font-size: 13px; margin-top: 12px; }
+  kbd { background: #2a2a2a; border: 1px solid #444; border-radius: 3px; padding: 0 5px; font-size: 12px; }
+  #done { display: none; font-size: 18px; padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header><h1>Who shot it?</h1><span id="match"></span><span id="progress"></span></header>
+<main>
+  <div id="work">
+    <div id="task"></div>
+    <div id="stage"><video id="v" muted playsinline loop></video><div id="mark"></div></div>
+    <div id="bar"><div id="played"></div><span id="arrive" title="balls arrive in the hive"></span></div>
+    <div class="row">
+      <button id="play">⏯ Pause</button>
+      <button id="slow">Speed 0.5×</button>
+      <button id="back">◀ frame</button><button id="fwd">frame ▶</button>
+      <span style="flex:1"></span>
+      <button id="cant">Can't tell</button>
+      <button id="none">No launch in this clip</button>
+      <button id="prev">← Previous</button>
+      <button id="save" class="primary" disabled>Save &amp; next →</button>
+    </div>
+    <p class="help">
+      The clip ends just after balls land in the hive shown above (yellow tick on the bar = arrival).
+      <b>Click the robot the balls left from</b>, ideally at the moment they leave it. Click again to move the mark.
+      Several robots shot? Pick the one whose balls reach the hive at the tick.<br>
+      <kbd>Space</kbd> pause · <kbd>←</kbd>/<kbd>→</kbd> one frame · <kbd>Enter</kbd> save &amp; next · <kbd>C</kbd> can't tell · <kbd>N</kbd> no launch.
+      Answers save as you go; you can close the tab and come back.
+    </p>
+  </div>
+  <div id="done">All done, thank you. You can close this tab.</div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const v = $("v"), mark = $("mark");
+let items = [], labels = {}, i = 0, click = null, rate = 0.5;
+
+async function init() {
+  items = await (await fetch("items.json")).json();
+  labels = await (await fetch("/labels")).json();
+  i = items.findIndex(it => !labels[it.id]); if (i < 0) i = items.length;
+  show();
+}
+function show() {
+  if (i >= items.length) { $("work").style.display = "none"; $("done").style.display = "block"; $("progress").textContent = `${items.length} / ${items.length}`; return; }
+  $("work").style.display = ""; $("done").style.display = "none";
+  const it = items[i], prev = labels[it.id];
+  $("match").textContent = `${it.match.toUpperCase()} · ${it.t.toFixed(1)} s into the match`;
+  $("progress").textContent = `${Object.keys(labels).length} labelled · clip ${i + 1} / ${items.length}`;
+  $("task").innerHTML = `${it.balls > 1 ? it.balls + " balls land" : "A ball lands"} in the <span class="hive ${it.hive}">${it.hive.toUpperCase()} hive</span> at the end of this clip. Which robot shot?`;
+  v.src = it.clip; v.playbackRate = rate; v.play();
+  $("arrive").style.left = `${(100 * it.from) / (it.from + 0.5)}%`;
+  click = prev && prev.answer === "robot" ? { x: prev.x, y: prev.y, ct: prev.clipTime } : null;
+  drawMark(); $("save").disabled = !click;
+}
+function drawMark() {
+  if (!click) { mark.style.display = "none"; return; }
+  const it = items[i], r = v.getBoundingClientRect();
+  mark.style.display = "block";
+  mark.style.left = `${(click.x / it.w) * r.width}px`; mark.style.top = `${(click.y / it.h) * r.height}px`;
+}
+$("stage").addEventListener("click", e => {
+  const it = items[i], r = v.getBoundingClientRect();
+  click = { x: Math.round(((e.clientX - r.left) / r.width) * it.w), y: Math.round(((e.clientY - r.top) / r.height) * it.h), ct: +v.currentTime.toFixed(3) };
+  drawMark(); $("save").disabled = false;
+});
+async function answer(kind) {
+  const it = items[i];
+  const body = { id: it.id, match: it.match, hive: it.hive, volleyT: it.t, answer: kind };
+  if (kind === "robot") {
+    if (!click) return;
+    const s = 1280 / it.w;   // store in 720p coordinates (what the analysis uses) and match time
+    Object.assign(body, { x: click.x, y: click.y, x720: Math.round(click.x * s), y720: Math.round(click.y * s), clipTime: click.ct, t: +(it.t - it.from + click.ct).toFixed(2) });
+  }
+  await fetch("/label", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  labels[it.id] = body; i++; show();
+}
+$("save").onclick = () => answer("robot");
+$("cant").onclick = () => answer("cant_tell");
+$("none").onclick = () => answer("no_launch");
+$("prev").onclick = () => { if (i > 0) { i--; show(); } };
+$("play").onclick = () => (v.paused ? v.play() : v.pause());
+$("slow").onclick = () => { rate = rate === 0.5 ? 0.25 : rate === 0.25 ? 1 : 0.5; v.playbackRate = rate; $("slow").textContent = `Speed ${rate}×`; };
+const step = d => { v.pause(); v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + d / 30)); };
+$("back").onclick = () => step(-1); $("fwd").onclick = () => step(1);
+v.addEventListener("timeupdate", () => { $("played").style.width = `${(100 * v.currentTime) / (v.duration || 1)}%`; });
+v.addEventListener("play", () => ($("play").textContent = "⏯ Pause")); v.addEventListener("pause", () => ($("play").textContent = "⏯ Play"));
+window.addEventListener("resize", drawMark);
+document.addEventListener("keydown", e => {
+  if (e.key === " ") { e.preventDefault(); v.paused ? v.play() : v.pause(); }
+  else if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
+  else if (e.key === "Enter" && click) answer("robot");
+  else if (e.key === "c" || e.key === "C") answer("cant_tell");
+  else if (e.key === "n" || e.key === "N") answer("no_launch");
+});
+init();
+</script>
+</body>
+</html>

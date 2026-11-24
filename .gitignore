@@ -24,3 +24,6 @@ tools/meta.json
 tools/err.txt
 tools/url720.txt
 tools/clips1080/
+
+# shooter-labelling clips (rebuilt from tools/clips*, copied with proj data)
+tools/gt/shooters/clips/

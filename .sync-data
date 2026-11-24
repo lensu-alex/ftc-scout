@@ -7,3 +7,4 @@ tools/models
 tools/gt/frames
 tools/gt/grid
 tools/frames
+tools/gt/shooters/clips
