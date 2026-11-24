@@ -25,7 +25,7 @@ _Last updated 2026-11-24 by Claude on the Mac._
    SessionStart hook prints a `[data]` line in every project with a `.sync-data`; the global `sync-data` skill
    says how to fetch and troubleshoot. `tools/sync-data.sh` is now a wrapper for `proj data`.
    Mac side ready: Remote Login on, Linux key in `authorized_keys`, data present (~860 MB).
-   Mac still needs (owner, needs their password): `brew install --cask tailscale-app`, open Tailscale, log in.
+   Mac on Tailscale since 2026-11-24: `lensus-macbook-air` (100.102.240.7), account `alexandru.lensu@...`; SSH answers there.
    **On Linux** (owner runs the sudo lines, same Tailscale account as the Mac):
    ```
    proj sync                                              # gets the new proj + sync-data skill
