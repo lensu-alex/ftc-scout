@@ -561,3 +561,21 @@ is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are
   Netherlands 13 → 5 volleys (true ~2), Michigan 3, Oregon unchanged (36 / 40).
 - Regression after the night's hive work (`check-all quick`): or1 36/6 29 clear; or5 40/6 35; or9 44/7 28; or18 43/14
   39; q10 24/5 21; m1 13/2 9; nlron 5/0 4; micoq 3/1 1. Top-down matches now at their true scale.
+
+**2026-11-24 (evening, Linux laptop): the "clear shooter" gap between machines was alliance labelling**
+- Same code and models give different `check-all` numbers on the Mac (M5) and Linux (x86): or18 43 volleys / 39 clear
+  vs 42 / 34. Each machine is repeatable run to run; tiny numeric differences (ffmpeg build, onnxruntime x86 vs ARM)
+  change which track pieces join which robot group. Per volley on or18, 7 of 42 shooters were a different robot
+  and 6 red volleys had no candidate at all on Linux, many at confidence 1.00 on both machines.
+- Cause: a group whose first piece starts after the first 4 s got its alliance from the marking colour, which reads
+  blue for nearly every robot (blue tape and walls behind them). Old labelling had 3-4 robots of one alliance on
+  screen at once for 83% (Linux) / 59% (Mac) of or18 and 37% / 74% of or9 — impossible in the game.
+- `scripts/cache-pass1.ts` saves pass 1 once; `scripts/eval-alliance.ts` scores alliance labelling without labels
+  (over-full time, labelled share, agreement between two caches of the same match) on 6 matches x 2 machines.
+- Fix shipped: no colour fallback (`groupAlliances`); unknown pieces get their alliance from the hive their launches
+  feed (attribution.ts) or stay unknown. Over-full 0% on all 6; Mac/Linux label agreement 86-100% (was 77-100%).
+  Linux pass 2 (720p): or18 6 no-robot volleys → 0, clear 34 → 41; or5 same; or9 clear 34 → 32; or1, q10 same; m1 10 → 9.
+- Tried and kept as a dev option only: `analysis/alliances.ts` (4 starting robots as slots, later pieces handed to
+  a free slot by reach + looks): labels more robot-time but one different hand-off carries through the match
+  (or9 agreement 69%). Truth for alliances per piece is still missing; frames at 720p are too small to read
+  markings by eye. Cross-machine shooter agreement with the fix is not measured yet (Mac went to sleep mid-run).

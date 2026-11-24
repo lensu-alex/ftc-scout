@@ -44,6 +44,12 @@ once (turns off Claude attribution, sets git identity to the noreply address).
 1. GPU training is ready on Linux: `cd tools && FTC_DATA=dataset/yolo5 .venv/bin/python train.py <name> yolo11n.pt 640`
    (~15 s/epoch on 1,457 images, so ~30 min for 120 epochs). train.py rewrites the Mac paths in data.yaml on the fly.
    New weights the Mac needs: `proj data push tools/runs/<name>` and note it here.
-2. Open vision items (PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
-   ~15% of volleys stay possible-for-both robots; clear-shooter margins are fragile (see table).
-3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).
+2. Finish checking the alliance fix (PLAN.md, last entry): with the Mac awake, run pass 2 with the current code on
+   or5/or9/or18 on both machines (`DUMP=<file> PASS2_720=1 npx tsx scripts/eval-pass2.ts ...`) and compare shooters
+   by position, as in that entry. The Linux table above predates the fix (Linux now: or18 42/14, 41 clear;
+   or9 32 clear; m1 9 clear; others same). Old tmp copies on the Mac in `/tmp/ftcx` can be deleted.
+3. A small alliance ground truth (which pieces are red/blue in or9/or18) would let `scripts/eval-alliance.ts`
+   measure correctness, not only consistency: needs 1080p crops or the owner's eye.
+4. Open vision items: Netherlands-type high-angle camera over-counts (5 volleys, true ~2); ~15% of volleys
+   stay possible-for-both robots.
+5. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).

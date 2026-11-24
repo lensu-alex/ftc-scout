@@ -71,6 +71,12 @@ console.log(`pass 2: ${bursts} bursts, ${ev.samples.length} frames, ${ev.launche
 const W = process.env.ATT_WIN ? (() => { const [b, a, r] = process.env.ATT_WIN!.split(","); return { before: +b, after: +a, fromRise: r === "rise" }; })() : undefined;
 const att = attributeVolleys(events, ev.samples, ev.launches, alliance, W);
 for (const x of att) console.log(`${x.hive.padEnd(4)} ${x.t.toFixed(2).padStart(7)} +${x.balls} → robot ${x.robot} conf ${x.confidence.toFixed(2)} | ${x.evidence.map(v => `${v.robot}:${v.px}px ${v.rel}x ${v.blobs}b ${v.launches}L`).join("  ")}`);
+// DUMP=<file.json>: tracks (every 0.5 s) + per-volley calls, to compare runs/machines by position, not track id
+if (process.env.DUMP) {
+  const { writeFileSync } = await import("node:fs");
+  const tracks = a.robots.map(r => ({ id: r.id, path: r.path.filter((_, i) => i % 5 === 0).map(p => [+(p.t - start720).toFixed(2), Math.round(p.x), Math.round(p.y), Math.round(p.s)]) }));
+  writeFileSync(process.env.DUMP, JSON.stringify({ tracks, att, alliance: Object.fromEntries(trackAlliance) }));
+}
 const pr = perRobot(att);
 console.log("per robot: " + [...pr.entries()].sort((p, q) => p[0] - q[0]).map(([r, v]) => `${r}: ${v.sure} sure + ${v.unsure} unsure (${v.volleys} volleys)`).join("  "));
 console.log(`clear volleys: ${att.filter(x => x.confidence >= 0.6).length} / ${att.length}`);

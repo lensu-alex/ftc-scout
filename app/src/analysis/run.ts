@@ -158,7 +158,10 @@ export function groupAlliances(a: MatchAnalysis, groups: RobotGroup[], teamAllia
       const early = a.robots.filter(r => g.ids.includes(r.id) && r.path[0].t <= a.start + 4).sort((p, q) => p.path[0].t - q.path[0].t)[0];
       if (early) { const left = early.path[0].x < centre; al = left === redLeft ? "red" : "blue"; }
     }
-    if (!al && Math.abs(g.colour) > 0.005) al = (g.colour > 0) === (teamAlliance === "Red") ? "red" : "blue";
+    // No fallback to the marking colour: it reads blue for most robots (blue tape and walls behind them) and
+    // labelled up to 4 robots on screen as one alliance (scripts/eval-alliance.ts). Unknown pieces get their
+    // alliance later from the hive their launches feed (attribution.ts), or stay unknown.
+    void teamAlliance;
     out.set(g.rep, al);
   }
   return out;
