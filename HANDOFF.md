@@ -21,7 +21,7 @@ _Last updated 2026-11-24 by Claude on the Linux laptop._
 1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac to-do** (for Claude on the Mac,
    after the owner switches on System Settings > General > Sharing > Remote Login):
    - trust the Linux laptop's key (it's the only key on the GitHub account, comment `lensu@omarchy`):
-     `mkdir -p ~/.ssh && curl -fsS https://github.com/lensu-alex.keys | grep -vxFf ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys`
+     `mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && curl -fsS https://github.com/lensu-alex.keys | grep -vxFf ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys`
    - write the Mac's `whoami` and LAN IP (`ipconfig getifaddr en0`) here under "Machines", commit, push.
    Then on Linux: `tools/sync-data.sh pull <mac-user>@<mac-ip> Developer/ftc-scout`, run `check-all quick`,
    compare with the Mac baseline (should match: same code, same models).
