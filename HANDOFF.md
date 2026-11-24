@@ -1,0 +1,22 @@
+# Handoff
+
+_Last updated 2026-11-24 by Claude on the Linux laptop._
+
+## State
+- Last vision work (Mac, 2026-11-23/24 overnight): hive counter robust across cameras, top-down disc mode,
+  team vs partner settled (chain → one-place-at-a-time → looks only when very clear). Latest regression
+  baseline is at the end of PLAN.md (`check-all quick`: or1 36/6, or5 40/6, or9 44/7, or18 43/14, q10 24/5,
+  m1 13/2, nlron 5/0, micoq 3/1).
+- Linux laptop set up (2026-11-24): clone at `~/Projects/ftc-scout`, `npm install` fine, `tsc -b` clean,
+  vitest 14/14, onnxruntime-node + sharp + ffmpeg-static load. **No dev data here yet** (clips/models only on the Mac),
+  so `check-all` reports the clips as missing.
+- Added `tools/sync-data.sh` (rsync the gitignored data over SSH, either direction) and made
+  `tools/train.py`, `tools/more_data*.sh` path-independent (were hard-coded to the Mac).
+
+## Next
+1. Get the clips onto the Linux laptop: needs SSH on one side (owner's call). From the Mac, with SSH on the Linux
+   laptop: `tools/sync-data.sh push lensu@<linux-ip> Projects/ftc-scout`. Then run `check-all quick` on Linux
+   and compare with the Mac baseline (should match: same code, same models).
+2. Open vision items (from PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
+   ~15% of volleys stay possible-for-both robots; disc counter only for top-down cameras.
+3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).

@@ -1,6 +1,6 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # Locate matches in more event streams, then pull training frames from them (dev only).
-cd /Users/lensu/Developer/ftc-scout/app
+cd "$(dirname "$0")/../app"
 export FTC_YTDLP=../tools/.venv/bin/yt-dlp
 while read code url; do
   id=${url##*=}

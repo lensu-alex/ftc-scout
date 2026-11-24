@@ -59,7 +59,7 @@ Overlay scores are never read or used.
 ## Dev tools
 
 `tools/` (Python, dev only, not part of the app): `sample_stream.py` pulls frames from a stream into `tools/dataset/`,
-`seq.py` makes contact sheets. Set up with `uv venv --python 3.12 tools/.venv && uv pip install --python tools/.venv/bin/python "yt-dlp[default]" opencv-python-headless numpy imageio-ffmpeg`.
+`seq.py` makes contact sheets, `sync-data.sh` copies the gitignored data (clips, models) between machines over SSH. Set up with `uv venv --python 3.12 tools/.venv && uv pip install --python tools/.venv/bin/python "yt-dlp[default]" opencv-python-headless numpy imageio-ffmpeg`.
 
 `app/scripts/` (Node, run with `npx tsx`), all using the same vision code as the browser:
 

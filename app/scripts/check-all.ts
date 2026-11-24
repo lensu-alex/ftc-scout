@@ -13,6 +13,9 @@ const M = [
   { name: "nlron", clip: "../tools/clips/NLRON_13760.mp4", start: 0, hd: "", hdStart: 0 },
   { name: "micoq", clip: "../tools/clips/USMICOQ_8530.mp4", start: 21, hd: "", hdStart: 0 },
 ];
+const missing = M.filter((m) => !existsSync(m.clip)).map((m) => m.name);
+if (missing.length) console.log(`clips missing on this machine: ${missing.join(", ")} (copy them with tools/sync-data.sh)`);
+if (missing.length === M.length) process.exit(1);
 console.log("match  | volleys tips | clear shooter | hive (720p box)");
 for (const m of M) {
   if (!existsSync(m.clip)) continue;
