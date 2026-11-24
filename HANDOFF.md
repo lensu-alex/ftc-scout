@@ -16,18 +16,26 @@ _Last updated 2026-11-24 by Claude on the Mac._
 ## Machines
 - Linux laptop: `lensu@192.168.1.106`, project at `~/Projects/ftc-scout`, no SSH server (needs sudo).
 - Mac: `lensu@192.168.1.102` (LAN IP, may change with DHCP; check `ipconfig getifaddr en0`), project at `~/Developer/ftc-scout`.
-  Remote Login is on. claude-sync installed 2026-11-24 (`paths.local` points ftc-scout at `~/Developer/ftc-scout`).
+  Remote Login is on and accepts the Linux key. claude-sync installed 2026-11-24 (`paths.local` points ftc-scout at
+  `~/Developer/ftc-scout`; `proj` on PATH via `~/.zprofile`).
 
 ## Next
-1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac to-do** (for Claude on the Mac,
-   after the owner switches on System Settings > General > Sharing > Remote Login):
-   - trust the Linux laptop's key (it's the only key on the GitHub account, comment `lensu@omarchy`):
-     `mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && curl -fsS https://github.com/lensu-alex.keys | grep -vxFf ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys`
-   - write the Mac's `whoami` and LAN IP (`ipconfig getifaddr en0`) here under "Machines", commit, push. **Done.**
-   - **Still open:** the key step above isn't done yet (Claude's safety check blocked it; the owner runs it by hand).
-     Check with `grep -c . ~/.ssh/authorized_keys` on the Mac.
-   Then on Linux: `tools/sync-data.sh pull <mac-user>@<mac-ip> Developer/ftc-scout`, run `check-all quick`,
-   compare with the Mac baseline (should match: same code, same models).
+1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac side is ready** (2026-11-24):
+   Remote Login on, the Linux key (from github.com/lensu-alex.keys) is in `~/.ssh/authorized_keys`, `lensu` is allowed
+   to SSH in, data present (~860 MB: clips 275M, clips1080 164M, models 180M, gt/frames 119M, gt/grid 122M, frames 2M).
+   **On Linux** (Mac must be awake and on the same Wi-Fi; it idle-sleeps after 1 min, so keep it awake during the copy):
+   ```
+   ssh lensu@192.168.1.102 true                                   # first time: accept the host key
+   ssh lensu@192.168.1.102 'caffeinate -i -t 1800' &              # keeps the Mac awake 30 min
+   tools/sync-data.sh pull lensu@192.168.1.102 Developer/ftc-scout
+   ```
+   then run `check-all quick` and compare with the Mac baseline above (should match: same code, same models).
+   - If the IP doesn't answer: the Mac's IP can change; try `Lensus-MacBook-Air.local` or ask the owner to run
+     `ipconfig getifaddr en0` on the Mac.
+   - The Mac's rsync is Apple's `openrsync` (protocol 29). It accepted the script's flags locally but wasn't tested
+     against Linux rsync. If the pull errors out with a protocol error, use `scp -r` or `sftp` for the folders as a
+     fallback, or ask the owner to `brew install rsync` on the Mac and add `--rsync-path=/opt/homebrew/bin/rsync`.
+   - `~/.ftc-scout/config.json` (API key) is not synced on purpose; copy it by hand if needed.
 2. Open vision items (from PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
    ~15% of volleys stay possible-for-both robots; disc counter only for top-down cameras.
 3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).
