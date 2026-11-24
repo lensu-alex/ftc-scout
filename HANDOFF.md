@@ -13,10 +13,18 @@ _Last updated 2026-11-24 by Claude on the Linux laptop._
 - Added `tools/sync-data.sh` (rsync the gitignored data over SSH, either direction) and made
   `tools/train.py`, `tools/more_data*.sh` path-independent (were hard-coded to the Mac).
 
+## Machines
+- Linux laptop: `lensu@192.168.1.106`, project at `~/Projects/ftc-scout`, no SSH server (needs sudo).
+- Mac: project at `~/Developer/ftc-scout`; user/IP: _to fill in_.
+
 ## Next
-1. Get the clips onto the Linux laptop: needs SSH on one side (owner's call). From the Mac, with SSH on the Linux
-   laptop: `tools/sync-data.sh push lensu@<linux-ip> Projects/ftc-scout`. Then run `check-all quick` on Linux
-   and compare with the Mac baseline (should match: same code, same models).
+1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac to-do** (for Claude on the Mac,
+   after the owner switches on System Settings > General > Sharing > Remote Login):
+   - trust the Linux laptop's key (it's the only key on the GitHub account, comment `lensu@omarchy`):
+     `mkdir -p ~/.ssh && curl -fsS https://github.com/lensu-alex.keys | grep -vxFf ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys`
+   - write the Mac's `whoami` and LAN IP (`ipconfig getifaddr en0`) here under "Machines", commit, push.
+   Then on Linux: `tools/sync-data.sh pull <mac-user>@<mac-ip> Developer/ftc-scout`, run `check-all quick`,
+   compare with the Mac baseline (should match: same code, same models).
 2. Open vision items (from PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
    ~15% of volleys stay possible-for-both robots; disc counter only for top-down cameras.
 3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).
