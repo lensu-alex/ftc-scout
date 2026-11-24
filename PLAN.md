@@ -588,3 +588,17 @@ is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are
   The colour-fallback removal was reverted (scored worse); the alliance tools stay. Two of the Mac's picks
   were a person standing outside the field. Next: labels on or5/or9 (28 clips ready) and a random, unbiased
   sample of volleys, then rework attribution against those labels (`score.py`).
+
+**2026-11-25 (night, Linux laptop): hive tips from the see-saw's position, measured against official tips**
+- Truth without the owner: official tips per alliance (FTCScout match results: autoHiveTips, dcHiveTips) for 11 local
+  clips, matched by reading the overlay's match name (`tools/gt/tips.json`; m1 = USORHIN Q1, nlron = NLRON Q12,
+  micoq = USMICOQ Q12, new: USMICOQ Q21, USALATQ Q4, USIADAIM1 Q10). Official scores are used only to measure.
+- The yellow-area counter misses tips: 42 of 52 found on 8 matches (|error| 14). A missed tip also shifts the
+  ball counts around it (the cell empties, the next rise is counted from the wrong level).
+- New: `seesawFlips` (vision/hive.ts). The see-saw rests in one of two positions and every tip flips it. Each hive
+  sample now carries two small pictures of the see-saw (tube colour 12x12, brightness 16x16); samples are split
+  into two positions (2-means) per picture kind, the cleaner split wins (blue tubes vanish against a blue wall,
+  the tag panel never does), ambiguous samples are ignored, a position must hold 1.2 s.
+  8 matches: 49 found of 52, |error| 9 (area 14), auto |error| 2 (area 4); or18 16/16, or1 10/10, or5 8/8.
+  Misses: q10 blue 0/5, or9 red 5/6; extra: nlron blue +2, micoq blue +1 (hives with 0 official tips).
+- Not wired into the app yet. Tools: `scripts/cache-all.sh` (caches with raw samples), `scripts/eval-tips.ts`.

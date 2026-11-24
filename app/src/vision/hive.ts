@@ -7,7 +7,7 @@ import { label } from "./launchEvidence";
 // hive box: every volley is a step up, every hive tip (cell empties into the lower cell) a drop.
 // Works at the analysis rate (~10 fps); no model. The hive box comes per camera view (found or tapped).
 
-export interface HiveSample { t: number; area: number; bumps: number; discs?: number; hidden?: boolean }   // discs: ball-sized blobs (looking down); hidden: a robot covers the box
+export interface HiveSample { t: number; area: number; bumps: number; discs?: number; hidden?: boolean; shape?: number[]; look?: number[] }   // shape: the see-saw's own tubes (12x12 grid); look: its brightness (16x16): to see it tip   // discs: ball-sized blobs (looking down); hidden: a robot covers the box
 
 export interface HiveEvent {
   t: number;          // midpoint between the plateau before and the one after (the balls arrived shortly before)
@@ -33,7 +33,49 @@ export class HiveWatcher {
   // yellow that is there before the match starts (the BIOBUZZ sign, markers, a stray ball) is not pollen scored
   private still: Uint8Array | null = null;
   private stillN = 0;
-  constructor(box: Box) { this.box = box; }
+  private seesaw: Box | null;
+  private tube: (r: number, g: number, b: number) => boolean;
+  /** box = where pollen is counted; seesaw = this alliance's whole see-saw (its tubes show which way it faces) */
+  constructor(box: Box, seesaw: Box | null = null, colour: "red" | "blue" = "red") {
+    this.box = box; this.seesaw = seesaw;
+    this.tube = colour === "red" ? (r, g, b) => r > 105 && g < 0.5 * r && b < 0.65 * r : (r, g, b) => b > 95 && r < 0.6 * b && g < 0.82 * b && b - r > 60;
+  }
+
+  /** Mean brightness in a 16x16 grid over the see-saw (enlarged 25%): the black-and-white tag panel moves when it tips. */
+  private look(f: Frame): number[] | undefined {
+    const s = this.seesaw; if (!s) return undefined;
+    const G = 16, mx = 0.25 * s.w, my = 0.25 * s.h;
+    const x0 = Math.max(0, Math.floor(s.x - mx)), y0 = Math.max(0, Math.floor(s.y - my));
+    const x1 = Math.min(f.width, Math.ceil(s.x + s.w + mx)), y1 = Math.min(f.height, Math.ceil(s.y + s.h + my));
+    const w = x1 - x0, h = y1 - y0; if (w < G || h < G) return undefined;
+    const sum = new Float32Array(G * G), n = new Float32Array(G * G);
+    for (let y = y0; y < y1; y += 2) {
+      const gy = Math.min(G - 1, Math.floor(((y - y0) * G) / h));
+      for (let x = x0; x < x1; x += 2) {
+        const p = (y * f.width + x) * 4, k = gy * G + Math.min(G - 1, Math.floor(((x - x0) * G) / w));
+        sum[k] += 0.299 * f.data[p] + 0.587 * f.data[p + 1] + 0.114 * f.data[p + 2]; n[k]++;
+      }
+    }
+    return Array.from(sum, (v, k) => Math.round(v / Math.max(1, n[k])));
+  }
+
+  /** Share of tube-coloured pixels in each cell of a 12x12 grid over the see-saw (enlarged 25%, it swings). */
+  private shape(f: Frame): number[] | undefined {
+    const s = this.seesaw; if (!s) return undefined;
+    const G = 12, mx = 0.25 * s.w, my = 0.25 * s.h;
+    const x0 = Math.max(0, Math.floor(s.x - mx)), y0 = Math.max(0, Math.floor(s.y - my));
+    const x1 = Math.min(f.width, Math.ceil(s.x + s.w + mx)), y1 = Math.min(f.height, Math.ceil(s.y + s.h + my));
+    const w = x1 - x0, h = y1 - y0; if (w < G || h < G) return undefined;
+    const hit = new Float32Array(G * G), n = new Float32Array(G * G);
+    for (let y = y0; y < y1; y += 2) {
+      const gy = Math.min(G - 1, Math.floor(((y - y0) * G) / h));
+      for (let x = x0; x < x1; x += 2) {
+        const p = (y * f.width + x) * 4, k = gy * G + Math.min(G - 1, Math.floor(((x - x0) * G) / w));
+        n[k]++; if (this.tube(f.data[p], f.data[p + 1], f.data[p + 2])) hit[k]++;
+      }
+    }
+    return Array.from(hit, (v, k) => Math.round((100 * v) / Math.max(1, n[k])) / 100);
+  }
 
   /** Call with frames from before the match start: learns the yellow that is always there. */
   learnStill(f: Frame) {
@@ -98,7 +140,7 @@ export class HiveWatcher {
       const r = (col[x - 1] + col[x] + col[x + 1] + col[x + 2] + col[Math.min(w - 1, x + 3)]) / 5;
       if (s >= 3 && s >= l && s >= r) { if (x - last >= ball * 0.7) { bumps++; last = x; } }
     }
-    return { t, area, bumps, discs, hidden };
+    return { t, area, bumps, discs, hidden, shape: this.shape(f), look: this.look(f) };
   }
 }
 
@@ -142,4 +184,50 @@ export function hiveEvents(samples: HiveSample[], ballArea = 100, hold = 0.6, mo
     }
   }
   return { events, scored, tips, plateaus };
+}
+
+/**
+ * Hive tips from the see-saw itself: it rests in one of two positions and every tip flips it to the other.
+ * Each sample carries two pictures of the see-saw (its tube colour on a 12x12 grid, its brightness on 16x16);
+ * per picture kind the samples are split into two positions (2-means), and the kind that separates them more
+ * cleanly is used (against a blue wall the blue tubes vanish; the black-and-white tag panel never does).
+ * Samples close to neither position (a robot or person in front) are ignored; a position must hold `hold` s.
+ * Returns the flip times, the stable stretches (which position, from, to) and how clean the split was (0..1).
+ */
+export function seesawFlips(samples: HiveSample[], hold = 1.2, ambiguous = 0.6) {
+  const S = samples.filter(s => s.shape && s.look && !s.hidden);
+  let best: { flips: number[]; runs: { pos: 0 | 1; t0: number; t1: number }[]; quality: number; kind: "shape" | "look" } | null = null;
+  if (S.length < 30) return { flips: [] as number[], runs: [] as { pos: 0 | 1; t0: number; t1: number }[], quality: 0, kind: "shape" as const };
+  const zs = (v: number[]) => { const m = v.reduce((a, b) => a + b, 0) / v.length, sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) + 1e-6; return v.map(x => (x - m) / sd); };
+  for (const kind of ["shape", "look"] as const) {
+    const V = S.map(s => (kind === "shape" ? s.shape! : zs(s.look!)));
+    const D = V[0].length;
+    // median over 5 samples (~0.5 s)
+    const Vs = V.map((_, i) => { const w = V.slice(Math.max(0, i - 2), i + 3); return Array.from({ length: D }, (_, d) => median(w.map(v => v[d]))); });
+    const dist = (a: number[], b: number[]) => { let s = 0; for (let d = 0; d < D; d++) s += (a[d] - b[d]) ** 2; return Math.sqrt(s); };
+    const mean = (vs: number[][]) => Array.from({ length: D }, (_, d) => vs.reduce((s, v) => s + v[d], 0) / Math.max(1, vs.length));
+    let a = mean(Vs.filter((_, i) => S[i].t < S[0].t + 1));
+    let b = Vs.reduce((far, v) => (dist(v, a) > dist(far, a) ? v : far), Vs[0]);
+    let lab: boolean[] = [];
+    for (let it = 0; it < 20; it++) {
+      lab = Vs.map(v => dist(v, a) < dist(v, b));
+      if (lab.every(x => x) || lab.every(x => !x)) break;
+      a = mean(Vs.filter((_, i) => lab[i])); b = mean(Vs.filter((_, i) => !lab[i]));
+    }
+    const da = Vs.map(v => dist(v, a)), db = Vs.map(v => dist(v, b));
+    const state = Vs.map((_, i) => (Math.min(da[i], db[i]) / Math.max(da[i], db[i], 1e-6) > ambiguous ? -1 : da[i] < db[i] ? 0 : 1));
+    const runs: { pos: 0 | 1; t0: number; t1: number }[] = [];
+    for (let i = 0; i < state.length; ) {
+      let j = i; while (j < state.length && state[j] === state[i]) j++;
+      if (state[i] >= 0 && S[j - 1].t - S[i].t >= hold) {
+        const last = runs[runs.length - 1];
+        if (last && last.pos === state[i]) last.t1 = S[j - 1].t; else runs.push({ pos: state[i] as 0 | 1, t0: S[i].t, t1: S[j - 1].t });
+      }
+      i = j;
+    }
+    const quality = da.reduce((s, x, i) => s + (Math.max(x, db[i]) - Math.min(x, db[i])) / Math.max(x, db[i], 1e-6), 0) / da.length;
+    const flips = runs.slice(1).map((r, k) => (runs[k].t1 + r.t0) / 2);
+    if (!best || quality > best.quality) best = { flips, runs, quality, kind };
+  }
+  return best!;
 }

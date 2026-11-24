@@ -39,6 +39,8 @@ export interface MatchAnalysis {
   detections: { t: number; dets: Detection[] }[];                    // per analysed frame, during play
   hives: { view: number; boxes: HiveBoxes }[];                       // where the hive is, per camera view
   hiveEvents: (HiveEvent & { hive: "red" | "blue"; view: number })[]; // pollen scored (volleys) and tips, match time
+  /** dev only (AnalyzeOptions.keepHiveSamples): what the hive watcher saw, to tune event extraction offline */
+  hiveSamples?: { view: number; hive: "red" | "blue"; ballArea: number; mode: "area" | "discs"; samples: HiveSample[] }[];
 }
 
 export interface RobotSummary extends Pick<Track, "id" | "hits" | "path"> {
@@ -54,6 +56,7 @@ export interface AnalyzeOptions {
   clockEvery: number;        // seconds between clock reads
   infer?: Infer;             // detector model; without it only clock + cameras are analysed
   embedInfer?: EmbedInfer;   // appearance model for robot identification
+  keepHiveSamples?: boolean; // dev: return the raw hive samples too (MatchAnalysis.hiveSamples)
   detectSize: number;        // detector input size
   tiles: boolean;            // also look at the far side zoomed in (small robots far away); ~3x the detector cost
 }
@@ -122,7 +125,7 @@ export async function analyzeMatch(
         const agreed = largestAgreeing(tries.finds);
         if (agreed.length >= 3 || (agreed.length >= 2 && tries.n >= 12)) {
           const boxes = medianHive(agreed);
-          hs = { boxes, watch: { red: new HiveWatcher(watchBox(boxes, "red")), blue: new HiveWatcher(watchBox(boxes, "blue")) }, samples: { red: [], blue: [] }, tries: tries.n, lastTry: t };
+          hs = { boxes, watch: { red: new HiveWatcher(watchBox(boxes, "red"), boxes.red, "red"), blue: new HiveWatcher(watchBox(boxes, "blue"), boxes.blue, "blue") }, samples: { red: [], blue: [] }, tries: tries.n, lastTry: t };
           hives.set(curView, hs);
         }
       }
@@ -238,7 +241,7 @@ export async function analyzeMatch(
     live: (notLive.get(id) ?? 0) === 0,
   })).sort((a, b) => b.seconds - a.seconds);
   const main = views.find(v => v.live) ?? null;
-  const hiveOut: MatchAnalysis["hives"] = [], hiveEv: MatchAnalysis["hiveEvents"] = [];
+  const hiveOut: MatchAnalysis["hives"] = [], hiveEv: MatchAnalysis["hiveEvents"] = [], hiveRaw: NonNullable<MatchAnalysis["hiveSamples"]> = [];
   for (const [v, hs] of hives) {
     const nv = remap.get(v) ?? v;
     hiveOut.push({ view: nv, boxes: hs.boxes });
@@ -253,11 +256,13 @@ export async function analyzeMatch(
       const guess = ballAreaFor(hs.boxes[h], frameW), seen = hs.watch[h].ballArea();
       const ballArea = seen !== null ? Math.max(guess, Math.min(4 * guess, seen)) : guess;
       for (const e of hiveEvents(hs.samples[h], ballArea, 0.6, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
+      if (opts.keepHiveSamples) hiveRaw.push({ view: nv, hive: h, ballArea, mode, samples: hs.samples[h] });
     }
   }
   hiveEv.sort((a, b) => a.t - b.t);
   return {
     start, shots: tracker.shots, views, mainView: main?.id ?? null, hives: hiveOut, hiveEvents: hiveEv,
+    ...(opts.keepHiveSamples ? { hiveSamples: hiveRaw } : {}),
     mainCoverage: main ? Math.min(1, main.seconds / MATCH_S) : 0,
     clockChecks, phaseTimes, framesAnalysed: n,
     robots: merged.map(r => ({ ...r, view: remap.get(r.view) ?? r.view })), detections,

@@ -1,52 +1,41 @@
 # Handoff
 
-_Last updated 2026-11-24 evening on the Linux laptop._
+_Last updated 2026-11-25 ~01:20 on the Linux laptop. Owner switching to the Mac (Linux laptop too loud)._
 
-## Mac: do this first
-History on GitHub was rewritten on 2026-11-24 (owner's request: only `lensu-alex` as author, no Claude
-co-author lines; files unchanged). The Mac's clone of `main` now looks diverged. If it has no local commits:
-`git fetch && git reset --hard origin/main` (check `git log origin/main..main` is empty first; if not, rebase:
-`git rebase origin/main`, the old copies drop out). Same for `~/.claude-sync`. Then `~/.claude-sync/install.sh`
-once (turns off Claude attribution, sets git identity to the noreply address).
+## Mac: start here
+- `git pull` in `~/Developer/ftc-scout` (the Mac copy was moved to the rewritten history on 2026-11-24; should
+  fast-forward). If the labelling server from yesterday is still running (`pgrep -f "serve.py 8765"`), it can stay
+  or be stopped; `tools/gt/shooters/labels.json` may have new answers: commit them if so.
+- `~/.claude-sync`: if the SessionStart hook says it diverged, it was rewritten on GitHub (no Claude co-author lines):
+  `cd ~/.claude-sync && git fetch && git reset --hard origin/main` (only if `git status` shows no local changes),
+  then `./install.sh` once (attribution off, git identity = lensu-alex noreply).
 
-## State
-- Last vision work (Mac, 2026-11-23/24): hive counter robust across cameras, top-down disc mode, team vs partner
-  settled (chain → one-place-at-a-time → looks only when very clear). Details at the end of PLAN.md.
-- Linux laptop works: `npm install`, `tsc -b`, vitest 14/14, helper native modules load.
-- `check-all quick` on Linux (720p clips copied from the Mac), vs the Mac baseline in PLAN.md:
+## What happened tonight (details: last entries of PLAN.md)
+1. **Shooter attribution is unreliable** (owner's labels, or18: right 3-9 of 16 depending on machine/version;
+   "clear" confidence not calibrated). Labelling page `tools/gt/shooters` (`python3 serve.py 8765`), 28 clips
+   left (or5, or9); score with `python3 score.py labels.json linold:dumps macold:dumps`.
+2. **Hive tips**: official tips per alliance are truth we have for free (`tools/gt/tips.json`, 11 clips).
+   The yellow-area counter misses ~20% of tips. New `seesawFlips()` in `app/src/vision/hive.ts` watches the
+   see-saw flip between its two positions: |error| 9 vs 14 on 8 matches, perfect on or18/or1/or5.
+   Hive samples now also carry `shape` (12x12) and `look` (16x16) of the see-saw (computed every sample, cheap).
 
-  | match | Linux volleys/tips, clear | Mac volleys/tips, clear |
-  |---|---|---|
-  | or1 | 34/6, 29 | 36/6, 29 |
-  | or5 | 40/6, 36 | 40/6, 35 |
-  | or9 | 46/7, 34 | 44/7, 28 |
-  | or18 | 42/14, 34 | 43/14, 39 |
-  | q10 | 22/5, 18 | 24/5, 21 |
-  | m1 | 12/2, 10 | 13/2, 9 |
-  | nlron | 5/1, 4 | 5/0, 4 |
-  | micoq | 3/1, 1 | 3/1, 1 |
-
-  Same code and models, yet volleys differ by up to ±2 and "clear shooter" by up to ±6: decoding (ffmpeg build)
-  and float differences (onnxruntime x86 vs ARM) flip borderline thresholds. **Compare regressions on the same
-  machine only**; the Linux numbers above are the Linux baseline. The clear-shooter count being this sensitive is
-  itself worth a look (margins sit close to the 0.6 cut).
-- GPU (Linux, RTX 3050 4 GB): `tools/.venv` (uv, Python 3.12) has PyTorch with CUDA, ultralytics, albumentations,
-  opencv, yt-dlp. A 3-epoch YOLO11n test trained on the GPU (0.6 GB peak). `tools/train.py` now picks
-  CUDA / MPS / CPU automatically (`FTC_DEVICE`, `FTC_BATCH` override). The app/helper still run on CPU on purpose
-  (lightweight rule, PLAN §0.1).
+## Next (in order)
+1. Cache all 11 clips on the Mac (`cd app && scripts/cache-all.sh /tmp/ftc-cache`, ~15-20 min) and run
+   `npx tsx scripts/eval-tips.ts ../tools/gt/tips.json /tmp/ftc-cache`. The last 3 (micoq21, alatq4, iadaim10)
+   were never cached; Mac numbers may differ a little from Linux.
+2. Fix the misses: q10 blue (0 of 5 found), or9 red (5/6); false flips on nlron blue (+2) and micoq blue (+1),
+   hives that never tipped (a "second position" was made from noise: require a minimum separation, or a
+   minimum quality, before trusting any flip).
+3. Wire it in (`analyzeMatch.ts`, where `hiveEvents` is called): when the see-saw split is clean, tips = flips;
+   count volleys only inside each stable position (a flip changes the view of the cell: the level jump at a flip
+   is not balls). That should also fix wrong ball counts per volley (the owner noticed them).
+   Then re-run `check-all quick` and record the new baseline.
+4. Ball counts per volley: no truth yet. The official `dcHivePollenNectar` (elements in the hive at the end) is a
+   weak check on the final level. The AprilTag panel hides half the row in one position: with the position now
+   known, calibrate one ball's area per position.
+5. Shooter attribution rework against the owner's labels (more labels on or5/or9 first).
 
 ## Machines
-- Linux laptop (`omarchy`): Tailscale `100.79.183.64`, project at `~/Projects/ftc-scout`. Has all `.sync-data`
-  folders + tools/dataset (pulled from the Mac 2026-11-24) and tools/.venv (CUDA). Not here: tools/runs, tools/debug.
-- Mac (`lensus-macbook-air`, Tailscale `100.102.240.7`): project at `~/Developer/ftc-scout`, has all the data.
-
-## Next
-1. **Shooter attribution is the problem now** (PLAN.md, last entries). Owner's labels (or18, 16 volleys): the
-   per-robot shooter is right 3-9 times out of 16 depending on machine/version, "clear" confidence is not
-   calibrated. Labelling page: on the Mac `cd tools/gt/shooters && python3 serve.py 8765`, open
-   http://localhost:8765 (28 clips left: or5, or9). Score: `python3 score.py labels.json linold:dumps macold:dumps`.
-   Then build a random (not disagreement-only) sample of volleys to label, and rework attribution against it.
-2. The alliance work: colour fallback kept (removing it scored worse on the labels); `scripts/eval-alliance.ts`,
-   `scripts/cache-pass1.ts` and the experimental `analysis/alliances.ts` stay as tools.
-3. Open vision items: Netherlands-type high-angle camera over-counts (5 volleys, true ~2).
-4. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).
+- Linux laptop (`omarchy`, Tailscale `100.79.183.64`): `~/Projects/ftc-scout`, all data + `tools/.venv` (CUDA,
+  RTX 3050). Caches from tonight are only in its `/tmp/ftc-night/cache` (8 matches; regenerate on the Mac).
+- Mac (`lensus-macbook-air`, Tailscale `100.102.240.7`): `~/Developer/ftc-scout`, all data.
