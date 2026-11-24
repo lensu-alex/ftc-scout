@@ -579,3 +579,12 @@ is hit after ~10 helper runs in a day from one IP (the two cheap mitigations are
   a free slot by reach + looks): labels more robot-time but one different hand-off carries through the match
   (or9 agreement 69%). Truth for alliances per piece is still missing; frames at 720p are too small to read
   markings by eye. Cross-machine shooter agreement with the fix is not measured yet (Mac went to sleep mid-run).
+- **Hand labels say the shooter call is mostly wrong (2026-11-24).** Labelling page `tools/gt/shooters`
+  (click the robot that shot, on 1080p clips of the 2.5 s before a volley). The owner labelled the 18 or18 clips
+  (16 shooters, 2 "no launch"; 12 where Mac and Linux picked different robots, 4 where they agreed):
+  Linux 9/16 right before the colour change, 3/16 after; Mac 5/16 both ways; even where both machines agreed only
+  1-2 of 4 were right; of volleys marked clear (confidence ≥ 0.6) the Mac got 5/15 right. So "~85% of volleys
+  have a clear shooter" was a confidence, not an accuracy: on or18 the per-robot split is not usable yet.
+  The colour-fallback removal was reverted (scored worse); the alliance tools stay. Two of the Mac's picks
+  were a person standing outside the field. Next: labels on or5/or9 (28 clips ready) and a random, unbiased
+  sample of volleys, then rework attribution against those labels (`score.py`).
