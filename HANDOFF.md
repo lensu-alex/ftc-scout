@@ -16,26 +16,27 @@ _Last updated 2026-11-24 by Claude on the Mac._
 ## Machines
 - Linux laptop: `lensu@192.168.1.106`, project at `~/Projects/ftc-scout`, no SSH server (needs sudo).
 - Mac: `lensu@192.168.1.102` (LAN IP, may change with DHCP; check `ipconfig getifaddr en0`), project at `~/Developer/ftc-scout`.
-  Remote Login is on and accepts the Linux key. claude-sync installed 2026-11-24 (`paths.local` points ftc-scout at
+  Reach it over Tailscale (name from `tailscale status`). Remote Login is on and accepts the Linux key. claude-sync installed 2026-11-24 (`paths.local` points ftc-scout at
   `~/Developer/ftc-scout`; `proj` on PATH via `~/.zprofile`).
 
 ## Next
-1. Get the clips onto the Linux laptop (owner chose: Mac Remote Login, Linux pulls). **Mac side is ready** (2026-11-24):
-   Remote Login on, the Linux key (from github.com/lensu-alex.keys) is in `~/.ssh/authorized_keys`, `lensu` is allowed
-   to SSH in, data present (~860 MB: clips 275M, clips1080 164M, models 180M, gt/frames 119M, gt/grid 122M, frames 2M).
-   **On Linux** (Mac must be awake and on the same Wi-Fi; it idle-sleeps after 1 min, so keep it awake during the copy):
+1. Get the clips onto the Linux laptop. **Now over Tailscale (works on any network), not the LAN IP.**
+   Data copying moved into claude-sync: folders listed in `.sync-data`, copied with `proj data pull|push`; the
+   SessionStart hook prints a `[data]` line in every project with a `.sync-data`; the global `sync-data` skill
+   says how to fetch and troubleshoot. `tools/sync-data.sh` is now a wrapper for `proj data`.
+   Mac side ready: Remote Login on, Linux key in `authorized_keys`, data present (~860 MB).
+   Mac still needs (owner, needs their password): `brew install --cask tailscale-app`, open Tailscale, log in.
+   **On Linux** (owner runs the sudo lines, same Tailscale account as the Mac):
    ```
-   ssh lensu@192.168.1.102 true                                   # first time: accept the host key
-   ssh lensu@192.168.1.102 'caffeinate -i -t 1800' &              # keeps the Mac awake 30 min
-   tools/sync-data.sh pull lensu@192.168.1.102 Developer/ftc-scout
+   proj sync                                              # gets the new proj + sync-data skill
+   sudo pacman -S --needed tailscale rsync && sudo systemctl enable --now tailscaled
+   sudo tailscale up --ssh                                # --ssh: lets the Mac reach Linux too, no sshd needed
+   tailscale status                                       # the Mac should be listed
+   cd ~/Projects/ftc-scout && proj data pull              # Mac must be on; it's kept awake during the copy
    ```
-   then run `check-all quick` and compare with the Mac baseline above (should match: same code, same models).
-   - If the IP doesn't answer: the Mac's IP can change; try `Lensus-MacBook-Air.local` or ask the owner to run
-     `ipconfig getifaddr en0` on the Mac.
-   - The Mac's rsync is Apple's `openrsync` (protocol 29). It accepted the script's flags locally but wasn't tested
-     against Linux rsync. If the pull errors out with a protocol error, use `scp -r` or `sftp` for the folders as a
-     fallback, or ask the owner to `brew install rsync` on the Mac and add `--rsync-path=/opt/homebrew/bin/rsync`.
-   - `~/.ftc-scout/config.json` (API key) is not synced on purpose; copy it by hand if needed.
+   then `check-all quick` and compare with the Mac baseline above (should match: same code, same models).
+   Bigger optional folders, only if needed: `proj data pull tools/dataset` (1.9G), `tools/runs`, `tools/debug` (1.6G).
+   `~/.ftc-scout/config.json` (API key) is not synced on purpose.
 2. Open vision items (from PLAN.md): Netherlands-type high-angle camera still over-counts (5 volleys, true ~2);
    ~15% of volleys stay possible-for-both robots; disc counter only for top-down cameras.
 3. Later phases: field coordinates for heatmaps, shared results database (PLAN §5, §6 phase 8).

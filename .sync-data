@@ -1,0 +1,9 @@
+# Large gitignored dev data copied between the laptops by `proj data pull|push` (claude-sync, sync-data skill).
+# Also big but not listed (only when needed): tools/dataset (1.9G), tools/runs, tools/debug (1.6G),
+# e.g. `proj data pull tools/dataset`. Never list ~/.ftc-scout/config.json (API key).
+tools/clips
+tools/clips1080
+tools/models
+tools/gt/frames
+tools/gt/grid
+tools/frames
