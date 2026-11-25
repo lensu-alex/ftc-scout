@@ -263,3 +263,35 @@ export function seesawFlips(samples: HiveSample[], opts: { hold?: number; margin
   }
   return best;
 }
+
+/**
+ * Hive events with the see-saw's position known: tips = the see-saw's flips, and volleys are read only inside
+ * each stable position (a flip turns the other cell up, so the level jump at a flip is not balls). Falls back to
+ * hiveEvents alone when the see-saw was not seen well enough to split into two positions.
+ */
+export function hiveTimeline(samples: HiveSample[], ballArea = 100, mode: "area" | "discs" = "area", opts: { perPosition?: boolean } = {}) {
+  const sf = seesawFlips(samples, mode === "area" ? { ballArea, minBalls: 2 } : {});
+  if (!sf.runs.length) return { ...hiveEvents(samples, ballArea, 0.6, mode), seesaw: null, ballAreas: [ballArea, ballArea] };
+  const segs = sf.runs.map(r => ({ r, s: samples.filter(x => x.t >= r.t0 && x.t <= r.t1) }));
+  // one ball per position: the AprilTag panel hides part of the row in one of them. Estimated from the smallest
+  // rises seen in that position (median of the lowest third, >= 6 rises), kept within 0.6-1.3x the guess.
+  const ballAreas = [ballArea, ballArea];
+  if (opts.perPosition && mode === "area") for (const pos of [0, 1]) {
+    const rises = segs.filter(g => g.r.pos === pos).flatMap(g => hiveEvents(g.s, ballArea, 0.6, mode).events.filter(e => e.kind === "scored").map(e => e.to - e.from)).sort((a, b) => a - b);
+    if (rises.length >= 6) ballAreas[pos] = Math.max(0.6 * ballArea, Math.min(1.3 * ballArea, median(rises.slice(0, Math.ceil(rises.length / 3)))));
+  }
+  const events: HiveEvent[] = [];
+  const plateaus: { t0: number; t1: number; level: number }[] = [];
+  for (const g of segs) {
+    const h = hiveEvents(g.s, ballAreas[g.r.pos], 0.6, mode);
+    events.push(...h.events.filter(e => e.kind === "scored"));
+    plateaus.push(...h.plateaus);
+  }
+  for (const t of sf.flips) {
+    const before = plateaus.filter(p => p.t1 <= t).pop(), after = plateaus.find(p => p.t0 >= t);
+    events.push({ t, kind: "tip", from: before?.level ?? 0, to: after?.level ?? 0 });
+  }
+  events.sort((a, b) => a.t - b.t);
+  const scored = events.reduce((s, e) => s + (e.kind === "scored" ? e.balls ?? 0 : 0), 0);
+  return { events, scored, tips: sf.flips.length, plateaus, seesaw: sf, ballAreas };
+}

@@ -10,7 +10,7 @@ import { MotionModel } from "../vision/motion";
 import { LaunchDetector, type Launch } from "../vision/launches";
 import { allianceColour, cosine, embed, meanEmbedding, type EmbedInfer } from "../vision/appearance";
 import { findHive, type HiveBoxes } from "../vision/hiveFinder";
-import { HiveWatcher, hiveEvents, type HiveEvent, type HiveSample } from "../vision/hive";
+import { HiveWatcher, hiveTimeline, type HiveEvent, type HiveSample } from "../vision/hive";
 
 // One pass over a located match: follows the clock, splits the video into camera shots,
 // groups them into camera views, and works out how much of the match each view covers.
@@ -255,7 +255,8 @@ export async function analyzeMatch(
       // half hidden behind the panel); looking down, lone balls are whole discs and much bigger than the guess
       const guess = ballAreaFor(hs.boxes[h], frameW), seen = hs.watch[h].ballArea();
       const ballArea = seen !== null ? Math.max(guess, Math.min(4 * guess, seen)) : guess;
-      for (const e of hiveEvents(hs.samples[h], ballArea, 0.6, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
+      // tips = the see-saw's flips; volleys read inside each of its stable positions (falls back to the area alone)
+      for (const e of hiveTimeline(hs.samples[h], ballArea, mode, { perPosition: true }).events) hiveEv.push({ ...e, hive: h, view: nv });
       if (opts.keepHiveSamples) hiveRaw.push({ view: nv, hive: h, ballArea, mode, samples: hs.samples[h] });
     }
   }

@@ -164,6 +164,24 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
 - Result: see-saw |error| 22 → **6** (auto 3 → 1), area counter 18. 61 found for 59 official. Left: or9 red -1
   (a tip at the buzzer: the see-saw starts moving at 157.5 s and the samples end at 160 before it settles),
   nlron red +1 / blue +1, micoq blue +1, iadaim10 red +1 / blue -1 (top-down and far cameras).
+- Wired in (`hiveTimeline` in vision/hive.ts, used by analyzeMatch): tips = the see-saw's flips; volleys are read
+  only inside each stable position, so the level jump at a flip is not counted as balls; falls back to the area
+  counter when the see-saw doesn't split. `check-all quick` on the Mac, old → new (same machine, same day):
+  tips or1 6 → 10, or5 6 → 8, or9 7 → 8, or18 14 → 16, q10 5 → 6, m1 2, nlron 0 → 2, micoq 1 → 2;
+  official 10 / 8 / 9 / 16 / 6 / 2 / 0 / 1: **tips |error| 11 → 4**. Volleys 36/40/44/43/24/13/5/3 →
+  36/43/46/43/24/11/4/3; clear shooter 29/35/28/39/21/9/4/1 → 26/35/31/38/22/10/3/1 (not a truth measure).
+- Ball counts per volley, truth = the owner's 15 marked 12808 volleys in or1 (launches, so scored <= marked):
+  found 12/15 → 13/15, exact 2 → 3, never more than launched. Counts are still about half of what was launched
+  (marked 4, counted 1-2): misses or under-reading, can't tell without scored-ball truth.
+- One ball's area per see-saw position (median of the smallest third of the rises in that position, kept within
+  0.6-1.3x the box guess): one position reads ~70-87 px, the other ~97-104 (the tag panel), on every Oregon match.
+  Small gain only: or1 exact 2 → 3; the spread of "balls in the cell just before a tip" (should be ~constant if a
+  cell tips at a fixed load) cv 0.45 → 0.44. The load at a tip is not constant across cameras either (or18 red
+  tips at 2-4 "balls", the others 6-8), so that check is weak. Kept on.
+- Official `dcHivePollenNectar` = elements left in the hive at the end (2 pts each), 0-7 at USORSFM1, 0 for most
+  high-tip alliances even where yellow sits in the cell at the end: not usable as a check of the final level.
+- or1 blue auto: frames show two tips in auto (~6 s and ~26 s); official says 1 auto + 8 teleop (total 9 = ours).
+  The auto/teleop split of tips is the referee's, so auto |error| 1 there is not a detector error.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
