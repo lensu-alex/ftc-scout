@@ -215,6 +215,15 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   **Fitted on the only labelled match (or18), 14 volleys**: needs the or5/or9 labels to confirm. check-all clear
   shares (confidence, not accuracy): or1 26, or5 35 → 37, or9 31 → 37, or18 38 → 35, q10 22 → 17, m1 10 → 6,
   nlron 3, micoq 1; volleys and tips unchanged.
+- **Correction, per-position ball area turned off.** The owner's or18 shooter labels are also volley truth (16 real
+  volleys, 2 "no launch"; sampled from the old detector's volleys, so old = 16/16 by construction): old 16/16, new
+  with per-position 14/16, new without 15/16 (the lost one at 84.5 s is a volley right after a flip whose balls stay
+  under 0.6 of a ball: mostly hidden). Per-position gained 1 exact count on or1 and cost 1 real volley on or18: off.
+  check-all quick now: or1 35 / 10 (10), 25/35 clear; or5 40 / 8 (8), 34/40; or9 44 / 8 (9), 32/44; or18 39 / 16
+  (16), 37/39; q10 23 / 6 (6), 18/23; m1 13 / 2 (2), 6/13; nlron 4 / 2 (0), 3/4; micoq 3 / 2 (1), 1/3. Tips |error| 4.
+- **The attribution override's 7/14 does not hold**: with this volley set or18 is 5/15 with and without it (the gain
+  came with per-position's volley set only). Kept (never worse in what was measured) but unproven; tonight's
+  shooter number is 5/15, the same as before (5/16). Dumps for the current code: `tools/gt/shooters/dumps/*_mac1125.json`.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 

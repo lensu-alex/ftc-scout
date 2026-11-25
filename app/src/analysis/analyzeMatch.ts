@@ -256,7 +256,7 @@ export async function analyzeMatch(
       const guess = ballAreaFor(hs.boxes[h], frameW), seen = hs.watch[h].ballArea();
       const ballArea = seen !== null ? Math.max(guess, Math.min(4 * guess, seen)) : guess;
       // tips = the see-saw's flips; volleys read inside each of its stable positions (falls back to the area alone)
-      for (const e of hiveTimeline(hs.samples[h], ballArea, mode, { perPosition: true }).events) hiveEv.push({ ...e, hive: h, view: nv });
+      for (const e of hiveTimeline(hs.samples[h], ballArea, mode).events) hiveEv.push({ ...e, hive: h, view: nv });
       if (opts.keepHiveSamples) hiveRaw.push({ view: nv, hive: h, ballArea, mode, samples: hs.samples[h] });
     }
   }
