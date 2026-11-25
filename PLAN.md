@@ -191,6 +191,17 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
 - Dead end: share of the see-saw picture covered by robot boxes, stored per sample, samples above 5-50% cover left
   out of the split. micoq blue's false flip (top-down: robots drive over and park near the blue see-saw from ~94 s)
   stays, micoq21 blue loses a real flip: |error| 4 → 5. Reverted (field and filter).
+- Why ball counts per volley are low (or1 frames, 12-25 s): in one see-saw position the AprilTag panel is in front
+  of the cell; balls fly in, roll behind it and only the one at the left end (plus some tops) stays visible. In the
+  other position balls rest in a row but touch and overlap. The resting yellow is a lower bound in both. Peak discs /
+  bumps / area during a volley (10 fps) don't track the marked counts either. Next idea (not tried): count balls
+  entering the cell during short 30 fps bursts after each rise (they arrive ~0.1 s apart, 2026-11-23 notes).
+- Shooter attribution on or18 with tonight's volleys (720p pass 2, Mac): 5/14 right (was 5/16), clear 4/12.
+  Per label: in 3 wrong calls the true shooter is tracked but carries the other alliance's label (track 5 "red"
+  feeds the blue hive at 47.9 and 63.25 s; track 2 is red early and the blue shooter at 145 s: an id switch);
+  in 4 no track is at the click at all; when the true shooter was a candidate the evidence picked it 5 of 7.
+  So the weak link is tracking and alliance labels, not the evidence score.
+- Dead end: other-alliance tracks as penalised candidates instead of excluded (penalty 3: 4/14, 6: 5/14). Reverted.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
