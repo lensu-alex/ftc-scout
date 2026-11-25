@@ -188,6 +188,9 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   buzzer (or1 blue 160.3 s, or9 red 159.6 s); the or1 frames show a clear tip at 159-160 s that the official
   count leaves out (9 = the flips before the buzzer). Tips after the buzzer don't count, so the window stays
   at +2 s; or9 red's sixth tip stays unexplained (|error| same 4 either way). Reverted.
+- Dead end: share of the see-saw picture covered by robot boxes, stored per sample, samples above 5-50% cover left
+  out of the split. micoq blue's false flip (top-down: robots drive over and park near the blue see-saw from ~94 s)
+  stays, micoq21 blue loses a real flip: |error| 4 → 5. Reverted (field and filter).
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
