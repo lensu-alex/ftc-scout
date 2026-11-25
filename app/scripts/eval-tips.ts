@@ -22,6 +22,8 @@ for (const name of Object.keys(truth)) {
   for (const h of ["red", "blue"] as const) {
     const r = raw.find(x => x.hive === h), want = truth[name][h];
     if (!r) { row.push(`${h} -`); continue; }
+    const end = r.samples[r.samples.length - 1]?.t ?? 0;
+    if (end < 150) { row.push(`${h} clip ends at ${end.toFixed(0)} s: not scored`.padEnd(70)); continue; }
     const ev = hiveEvents(r.samples, r.ballArea, 0.6, r.mode).events;
     const tips = ev.filter(e => e.kind === "tip"), auto = tips.filter(e => e.t <= AUTO_END).length;
     const n = want.auto + want.dc;

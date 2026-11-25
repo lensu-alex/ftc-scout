@@ -182,6 +182,12 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   high-tip alliances even where yellow sits in the cell at the end: not usable as a check of the final level.
 - or1 blue auto: frames show two tips in auto (~6 s and ~26 s); official says 1 auto + 8 teleop (total 9 = ours).
   The auto/teleop split of tips is the referee's, so auto |error| 1 there is not a detector error.
+- iadaim10's clip ends ~25 s before the match does (samples stop at 133 s): its tips can't be scored; eval-tips now
+  marks clips ending before 150 s as not scored. On the 10 full clips: see-saw |error| 4, area counter 16.
+- Dead end: watching the hive 5 s past the buzzer (to catch or9 red's last tip). Both new flips start after the
+  buzzer (or1 blue 160.3 s, or9 red 159.6 s); the or1 frames show a clear tip at 159-160 s that the official
+  count leaves out (9 = the flips before the buzzer). Tips after the buzzer don't count, so the window stays
+  at +2 s; or9 red's sixth tip stays unexplained (|error| same 4 either way). Reverted.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
