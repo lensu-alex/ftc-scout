@@ -23,21 +23,27 @@ export function attributeVolleys(
   for (const s of samples) for (const [id, v] of s.above) (per.get(id) ?? per.set(id, []).get(id)!).push(v.px);
   const base = new Map<number, number>();
   for (const [id, arr] of per) { const a = [...arr].sort((x, y) => x - y); base.set(id, (a[Math.floor(0.6 * (a.length - 1))] ?? 0) + 1); }
-  // robots whose alliance is unknown: the hive their launch evidence precedes most often is theirs
+  // robots whose alliance is unknown: the hive their launch evidence precedes most often is theirs; a known label
+  // is overridden when that evidence favours the other hive 2:1 (track id switches carry a robot's label onto
+  // another robot: or18 track 5 "red" fed the blue hive), with clear evidence before >= 2 of its volleys. Fitted on or18's 14 labelled volleys: 5 → 7 right.
   const known = new Map<number, "red" | "blue" | null>();
   const allIds = new Set<number>(); for (const s of samples) for (const id of s.above.keys()) allIds.add(id);
+  const OVERRIDE = 2;
   for (const id of allIds) {
     let al = alliance(id);
-    if (al === null) {
-      const sum = { red: 0, blue: 0 };
+    {
+      const sum = { red: 0, blue: 0 }, strong = { red: 0, blue: 0 };
       for (const e of events) {
         if (e.kind !== "scored") continue;
         const [w0, w1] = windowOf(e);
         const win = samples.filter(s => s.t >= w0 && s.t <= w1);
         const vals = win.map(s => s.above.get(id)?.px).filter((v): v is number => v !== undefined);
-        if (vals.length >= 10) sum[e.hive] += vals.reduce((a, v) => a + v, 0) / ((base.get(id) ?? 1) * vals.length);
+        if (vals.length < 10) continue;
+        const rel = vals.reduce((a, v) => a + v, 0) / ((base.get(id) ?? 1) * vals.length);
+        sum[e.hive] += rel; if (rel >= 2) strong[e.hive]++;
       }
-      if (sum.red + sum.blue > 0) al = sum.blue > sum.red ? "blue" : "red";
+      if (al === null) { if (sum.red + sum.blue > 0) al = sum.blue > sum.red ? "blue" : "red"; }
+      else { const other = al === "red" ? "blue" : "red"; if (sum[other] > OVERRIDE * sum[al] && strong[other] >= 2) al = other; }
     }
     known.set(id, al);
   }

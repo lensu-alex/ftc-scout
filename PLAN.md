@@ -209,6 +209,12 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   or1 36 volleys / 10 tips (official 10), 26/36 clear; or5 43 / 8 (8), 35/43; or9 46 / 8 (9), 31/46;
   or18 43 / 16 (16), 38/43; q10 24 / 6 (6), 22/24; m1 11 / 2 (2), 10/11; nlron 4 / 2 (0), 3/4; micoq 3 / 2 (1), 1/3.
   Tips |error| 4.
+- Shooter attribution: a track's known alliance is overridden when its launch evidence favours the other hive 2:1
+  with clear evidence (>= 2x its usual level) before >= 2 of that hive's volleys (id switches carry one robot's
+  label onto another). or18 labels: 5/14 → **7/14** right, clear 4/12 → 6/11; ratio 1.5 or 2 → 7, 3 or 4 → 5.
+  **Fitted on the only labelled match (or18), 14 volleys**: needs the or5/or9 labels to confirm. check-all clear
+  shares (confidence, not accuracy): or1 26, or5 35 → 37, or9 31 → 37, or18 38 → 35, q10 22 → 17, m1 10 → 6,
+  nlron 3, micoq 1; volleys and tips unchanged.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 

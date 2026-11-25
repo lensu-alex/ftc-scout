@@ -52,6 +52,13 @@ describe("attributeVolleys", () => {
     expect(att[0].robot).toBe(1);
     expect(att[0].confidence).toBeGreaterThan(0.6);
   });
+  it("relabels a robot whose clear evidence keeps preceding the other alliance's volleys (track id switch)", () => {
+    const quiet = samples(0, 100, { 1: 0, 3: 0 });
+    const loud = [20, 50, 80].flatMap(T => samples(T - 1.8, T - 0.3, { 1: 0, 3: 200 }));
+    const vol = (T: number) => ({ t: T, riseAt: T, kind: "scored" as const, balls: 2, from: 0, to: 200, hive: "blue" as const });
+    const att = attributeVolleys([vol(20), vol(50), vol(80)], [...quiet, ...loud].sort((a, b) => a.t - b.t), [], id => (id === 3 ? "red" : "blue"));
+    expect(att.map(a => a.robot)).toEqual([3, 3, 3]);
+  });
   it("is unsure when both alliance robots show the same evidence", () => {
     const quiet = samples(0, 8, { 1: 0, 2: 0 });
     const loud = samples(8.2, 9.7, { 1: 40, 2: 40 });
