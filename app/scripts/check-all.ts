@@ -1,6 +1,6 @@
 // Offline regression over the local clips: hive volleys/balls/tips per alliance and clear-shooter share.
 // usage: tsx scripts/check-all.ts [quick]   (quick = pass 2 on the 720p clip; otherwise 1080p clips where present)
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 const quick = process.argv[2] === "quick";
 const M = [
@@ -16,7 +16,10 @@ const M = [
 const missing = M.filter((m) => !existsSync(m.clip)).map((m) => m.name);
 if (missing.length) console.log(`clips missing on this machine: ${missing.join(", ")} (copy them with tools/sync-data.sh)`);
 if (missing.length === M.length) process.exit(1);
-console.log("match  | volleys tips | clear shooter | hive (720p box)");
+// official tips per match (tools/gt/tips.json; used only to measure): printed next to ours with the |error| sum
+const truth: Record<string, Record<"red" | "blue", { auto: number; dc: number }>> = existsSync("../tools/gt/tips.json") ? JSON.parse(readFileSync("../tools/gt/tips.json", "utf8")) : {};
+let tipErr = 0;
+console.log("match  | volleys tips (official) | clear shooter | hive (720p box)");
 for (const m of M) {
   if (!existsSync(m.clip)) continue;
   const useHd = !quick && m.hd && existsSync(m.hd);
@@ -24,5 +27,8 @@ for (const m of M) {
   let out = "";
   try { out = execFileSync("npx", args, { encoding: "utf8", env: { ...process.env, PASS2_720: useHd ? "" : "1" }, stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { out = String((e as { stdout?: string }).stdout ?? e); }
   const vol = /(\d+) volleys, (\d+) tips/.exec(out), clear = /clear volleys: (\d+) \/ (\d+)/.exec(out), hive = /hive (\[.*?\])/.exec(out);
-  console.log(`${m.name.padEnd(6)} | ${vol ? `${vol[1].padStart(3)} ${vol[2].padStart(4)}` : "   -    -"} | ${clear ? `${clear[1]}/${clear[2]}`.padStart(13) : "            -"} | ${hive ? hive[1].slice(0, 70) : "-"}`);
+  const tr = truth[m.name], off = tr ? tr.red.auto + tr.red.dc + tr.blue.auto + tr.blue.dc : null;
+  if (vol && off !== null) tipErr += Math.abs(+vol[2] - off);
+  console.log(`${m.name.padEnd(6)} | ${vol ? `${vol[1].padStart(3)} ${vol[2].padStart(4)}` : "   -    -"} ${off !== null ? `(${off})`.padStart(10) : "".padStart(10)} | ${clear ? `${clear[1]}/${clear[2]}`.padStart(13) : "            -"} | ${hive ? hive[1].slice(0, 70) : "-"}`);
 }
+console.log(`tips |error| vs official (both alliances summed per match): ${tipErr}`);

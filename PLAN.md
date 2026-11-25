@@ -202,6 +202,13 @@ the helper fetches each match as 8 parallel parts (YouTube limits each connectio
   in 4 no track is at the click at all; when the true shooter was a candidate the evidence picked it 5 of 7.
   So the weak link is tracking and alliance labels, not the evidence score.
 - Dead end: other-alliance tracks as penalised candidates instead of excluded (penalty 3: 4/14, 6: 5/14). Reverted.
+- Tried: balls entering the cell at 30 fps (or1, `scripts/_entry.ts`: moving ball-sized yellow blobs per frame
+  around each marked volley). Too noisy as it is: bounces, rolling balls and people; the peak per volley is 2-9
+  where 4 were marked. Would need blob tracking through the cell. Not pursued tonight.
+- `check-all` now prints the official tips next to ours and the |error| sum. **Baseline (Mac, quick, 2026-11-25):**
+  or1 36 volleys / 10 tips (official 10), 26/36 clear; or5 43 / 8 (8), 35/43; or9 46 / 8 (9), 31/46;
+  or18 43 / 16 (16), 38/43; q10 24 / 6 (6), 22/24; m1 11 / 2 (2), 10/11; nlron 4 / 2 (0), 3/4; micoq 3 / 2 (1), 1/3.
+  Tips |error| 4.
 
 ## 0.1 Lightweight rule (user, 2026-11-18)
 
